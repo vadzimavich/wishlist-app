@@ -52,7 +52,7 @@ export function InviteClientPage({ initialData, token }: Props) {
     let lenis: any
 
     const initLenis = async () => {
-      const { default: Lenis } = await import('@studio-freight/lenis')
+      const { default: Lenis } = await import('lenis')
       lenis = new Lenis({
         duration: 1.4,
         easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
