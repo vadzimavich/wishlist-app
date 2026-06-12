@@ -137,7 +137,8 @@ components/
 │   ├── HeroSection.tsx
 │   ├── WishlistSection.tsx
 │   ├── GiftModal.tsx
-│   └── GuestsList.tsx
+│   ├── GuestsList.tsx
+│   └── InviteMap.tsx            # Яндекс Карта с местом проведения
 └── shared/         — общие компоненты
     ├── Button.tsx
     └── LoadingSpinner.tsx
@@ -197,6 +198,7 @@ components/
 3. **Cloudinary**: загрузка изображений — прямо с фронтенда через unsigned preset, НЕ через бэкенд
 4. **SignalR CORS**: `withCredentials: false` — гостевые соединения без cookies
 5. **Next.js Image**: обязательно добавь Cloudinary домен в `next.config.ts → images.domains`
+6. **Yandex Maps API**: ключ хранится в `NEXT_PUBLIC_YANDEX_MAPS_API_KEY` (фронтенд only). Бесплатно до 100 000 загрузок карт в месяц. Получить ключ: https://developer.tech.yandex.ru/
 
 ---
 

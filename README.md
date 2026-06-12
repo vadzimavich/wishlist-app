@@ -33,6 +33,7 @@
 | **БД** | PostgreSQL + EF Core 8 | Реляции, бесплатно на Supabase |
 | **Авторизация** | JWT + Refresh tokens | Stateless, масштабируемо |
 | **Изображения** | Cloudinary (free tier) | CDN + трансформации on-the-fly |
+| **Карты** | Yandex Maps API (free tier) | Интерактивная карта места проведения (до 100K загрузок/мес) |
 | **Deploy FE** | Vercel (free) | Native Next.js support |
 | **Deploy BE** | Render (free tier) | Docker-контейнер, 750h/месяц |
 | **Deploy DB** | Supabase (free) | 500MB PostgreSQL |
@@ -51,6 +52,7 @@
 - [x] Выбор подарка (соло) → смена статуса в real-time
 - [x] Групповой сбор → присоединение других гостей
 - [x] SignalR real-time обновления статусов
+- [x] Карта/адрес события (Yandex Maps API)
 
 ### Перспективные (Phase 2+)
 - [ ] **Парсер ссылок** — API endpoint `POST /api/parser/fetch-meta` принимает URL, возвращает title/image/price (Wildberries, Ozon, AliExpress через Playwright или HtmlAgilityPack)
@@ -58,7 +60,6 @@
 - [ ] Email-приглашения (SendGrid / Resend)
 - [ ] OAuth (Google, VK)
 - [ ] Несколько вишлистов на событие
-- [ ] Карта/адрес события (Yandex Maps API)
 - [ ] Telegram Bot для уведомлений
 - [ ] PWA (offline support)
 - [ ] Analytics дэшборд

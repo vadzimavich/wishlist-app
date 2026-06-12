@@ -101,6 +101,7 @@ dotnet ef database update --no-build
    NEXT_PUBLIC_API_URL=https://wishlist-api.onrender.com
    NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=<твой cloud name>
    NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=wishlist
+   NEXT_PUBLIC_YANDEX_MAPS_API_KEY=<твой API-ключ Яндекс Карт>
    ```
 5. **Deploy**
 
@@ -151,6 +152,7 @@ jobs:
 | `AllowedOrigins` | Render | URL Vercel-приложения (CORS) |
 | `NEXT_PUBLIC_API_URL` | Vercel | URL Render бэкенда |
 | `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` | Vercel | Имя unsigned upload preset |
+| `NEXT_PUBLIC_YANDEX_MAPS_API_KEY` | Vercel | API-ключ Яндекс Карт (бесплатно до 100K загрузок/мес) |
 
 ---
 

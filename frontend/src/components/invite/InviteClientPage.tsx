@@ -8,6 +8,7 @@ import { useWishlistStore } from '@/lib/store'
 import { useWishlistRealtime } from '@/hooks/useWishlistRealtime'
 import { InviteHero } from './InviteHero'
 import { InviteDetails } from './InviteDetails'
+import { InviteMap } from './InviteMap'
 import { InviteGuests } from './InviteGuests'
 import { InviteWishlist } from './InviteWishlist'
 import { InviteRsvpBar } from './InviteRsvpBar'
@@ -122,6 +123,9 @@ export function InviteClientPage({ initialData, token }: Props) {
         location={page.eventLocation}
         description={page.eventDescription}
       />
+
+      {/* Map */}
+      <InviteMap location={page.eventLocation} />
 
       {/* Guests */}
       <InviteGuests guests={guests} currentGuestId={page.currentGuest.id} />
