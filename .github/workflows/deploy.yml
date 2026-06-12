@@ -1,0 +1,48 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+# Vercel и Render деплоятся автоматически по push в main.
+# Этот workflow отвечает за запуск EF миграций после деплоя бэкенда.
+
+jobs:
+  notify-deploy:
+    name: Post-deploy checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Ждём, пока Render задеплоит новую версию (обычно 3-5 минут)
+      - name: Wait for Render deploy
+        run: sleep 180
+
+      # Health check — убедимся, что API отвечает
+      - name: API Health check
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.API_URL }}/health" || echo "000")
+          echo "Health status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ API health check failed (status $STATUS)"
+            exit 1
+          fi
+          echo "✅ API is healthy"
+
+      # Уведомление в Telegram (опционально — добавь TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в secrets)
+      - name: Notify Telegram
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.TELEGRAM_BOT_TOKEN }}" ]; then
+            JOB_STATUS="${{ job.status }}"
+            MSG="🚀 *WishList deploy*%0A"
+            MSG+="Branch: \`main\`%0A"
+            MSG+="Commit: \`$(echo ${{ github.sha }} | cut -c1-7)\`%0A"
+            MSG+="Status: $JOB_STATUS"
+            curl -s -X POST \
+              "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+              -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}&text=${MSG}&parse_mode=Markdown"
+          fi

@@ -1,0 +1,271 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Google Fonts fallback (если нет локальных шрифтов) ─────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@400;700;800&display=swap&subset=cyrillic');
+
+/* ─── CSS Variables ──────────────────────────────────────────────────────── */
+:root {
+  /* Admin colors */
+  --admin-bg: #0D0D14;
+  --admin-surface: #16161F;
+  --admin-elevated: #1E1E2A;
+  --admin-border: #2A2A3A;
+  --admin-text: #E4E4EF;
+  --admin-muted: #7A7A9A;
+
+  /* Brand colors */
+  --brand-purple: #6B2FE0;
+  --brand-violet: #9B59F5;
+  --brand-champagne: #F5D88A;
+  --brand-pearl: #E8E4FF;
+  --brand-midnight: #080812;
+  --brand-deep: #0F0F20;
+
+  /* Semantic */
+  --success: #4ADE80;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --info: #60A5FA;
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-hover: rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--admin-bg);
+  color: var(--admin-text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ─── Liquid Glass Effect ────────────────────────────────────────────────── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+}
+
+.glass-hover {
+  transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+
+.glass-hover:hover {
+  background: var(--glass-hover);
+  border-color: rgba(155, 89, 245, 0.3);
+  transform: translateY(-2px);
+}
+
+/* ─── Liquid Glass Card (Invite Page) ────────────────────────────────────── */
+.liquid-glass {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(40px) saturate(200%) brightness(110%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(110%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.5rem;
+  overflow: hidden;
+}
+
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(107, 47, 224, 0.04) 100%
+  );
+  pointer-events: none;
+}
+
+.liquid-glass::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+}
+
+/* ─── Shimmer Loading ────────────────────────────────────────────────────── */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(255,255,255,0.1) 50%,
+    rgba(255,255,255,0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ─── Gradient Text ──────────────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--brand-pearl) 0%, var(--brand-violet) 50%, var(--brand-champagne) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-gold {
+  background: linear-gradient(135deg, #F5D88A 0%, #FFB347 50%, #F5D88A 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+/* ─── Parallax Wrapper ───────────────────────────────────────────────────── */
+.parallax-wrapper {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+/* ─── Animated Background Orbs ──────────────────────────────────────────── */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.orb-purple {
+  background: radial-gradient(circle, var(--brand-purple) 0%, transparent 70%);
+}
+
+.orb-violet {
+  background: radial-gradient(circle, var(--brand-violet) 0%, transparent 70%);
+}
+
+.orb-champagne {
+  background: radial-gradient(circle, var(--brand-champagne) 0%, transparent 70%);
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--admin-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--admin-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--admin-muted);
+}
+
+/* ─── Focus visible ──────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--brand-violet);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Selection ──────────────────────────────────────────────────────────── */
+::selection {
+  background-color: rgba(107, 47, 224, 0.3);
+  color: var(--brand-pearl);
+}
+
+/* ─── Admin input styles ─────────────────────────────────────────────────── */
+.admin-input {
+  width: 100%;
+  background: var(--admin-elevated);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--admin-text);
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+.admin-input:focus {
+  border-color: var(--brand-violet);
+  box-shadow: 0 0 0 3px rgba(107, 47, 224, 0.15);
+}
+
+.admin-input::placeholder {
+  color: var(--admin-muted);
+}
+
+/* ─── Status badges ──────────────────────────────────────────────────────── */
+.badge-available {
+  background: rgba(74, 222, 128, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+.badge-reserved {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--warning);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.badge-collective {
+  background: rgba(96, 165, 250, 0.12);
+  color: var(--info);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+/* ─── Reduced motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Mobile performance optimizations ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .orb {
+    opacity: 0.08;
+    filter: blur(60px);
+  }
+
+  /* Отключаем тяжёлый backdrop-filter на слабых устройствах */
+  @supports not (backdrop-filter: blur(20px)) {
+    .glass, .liquid-glass {
+      background: rgba(22, 22, 31, 0.95);
+    }
+  }
+}
