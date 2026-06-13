@@ -14,45 +14,6 @@ const MARGIN = 50
 const GRID_SPACING_X = 160  // horizontal cell spacing (stretched)
 const GRID_SPACING_Y = 100   // vertical cell spacing
 
-function generateEdges(ids: string[], centerId?: string): [string, string][] {
-  const sorted = [...ids].sort()
-  const result: [string, string][] = []
-
-  // Each guest connects to the next and skip-next in sorted order
-  for (let i = 0; i < sorted.length; i++) {
-    const next = (i + 1) % sorted.length
-    if (next !== i) {
-      result.push([sorted[i], sorted[next]])
-    }
-    // For larger groups, add a second edge (skip connection)
-    if (sorted.length > 6) {
-      const skip = (i + 2) % sorted.length
-      if (skip !== i && skip !== next) {
-        result.push([sorted[i], sorted[skip]])
-      }
-    }
-  }
-
-  // Connect center to first 3-4 guests (if center is in the list)
-  if (centerId && sorted.includes(centerId)) {
-    const centerIdx = sorted.indexOf(centerId)
-    const others = sorted.filter(id => id !== centerId)
-    for (let i = 0; i < Math.min(4, others.length); i++) {
-      const target = others[i]
-      // Check if edge already exists
-      const exists = result.some(([a, b]) =>
-        (a === sorted[centerIdx] && b === target) ||
-        (a === target && b === sorted[centerIdx])
-      )
-      if (!exists) {
-        result.push([sorted[centerIdx], target])
-      }
-    }
-  }
-
-  return result
-}
-
 const containerVariants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.04, delayChildren: 0.15 } },
@@ -66,7 +27,6 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
   const graphRef = useRef<HTMLDivElement>(null)
   const [springParams, setSpringParams] = useState({ tension: 170, friction: 26, mass: 1, minDistance: 110 })
   const [initialized, setInitialized] = useState(false)
-  const [showDebug, setShowDebug] = useState(false)
   const draggedGuestIdRef = useRef<number | null>(null)
   const isDraggingRef = useRef(false)
   const homePositionsRef = useRef<{ x: number; y: number }[]>([])
@@ -77,7 +37,6 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
   const centerGuest = useMemo(() => visibleGuests.find(g => g.id === currentGuestId), [visibleGuests, currentGuestId])
   const orbitIds = useMemo(() => orbitingGuests.map(g => g.id), [orbitingGuests])
   const allIds = useMemo(() => (centerGuest ? [centerGuest.id, ...orbitIds] : orbitIds), [centerGuest, orbitIds])
-  const edges = useMemo(() => generateEdges(allIds, centerGuest?.id), [allIds, centerGuest])
 
   const [springs, api] = useSprings(
     orbitingGuests.length,
@@ -89,12 +48,6 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
     y: 0,
     config: { tension: 80, friction: 28, mass: 2 },
   }))
-
-  const idToSpringIdx = useMemo(() => {
-    const map = new Map<string, number>()
-    orbitingGuests.forEach((g, i) => map.set(g.id, i))
-    return map
-  }, [orbitingGuests])
 
   function computeGridLayout(count: number, cx: number, cy: number): { x: number; y: number }[] {
     if (count <= 1) return Array.from({ length: count }, () => ({ x: cx, y: cy }))
@@ -265,18 +218,6 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
     })
   }, [api])
 
-  const Slider = useCallback(({ label, value, min, max, step, onChange }: {
-    label: string; value: number; min: number; max: number; step: number
-    onChange: (v: number) => void
-  }) => (
-    <div className="flex items-center gap-2 text-[10px] text-brand-pearl/60">
-      <span className="w-14 shrink-0 text-left">{label}</span>
-      <input type="range" min={min} max={max} step={step} value={value}
-        onChange={e => onChange(parseFloat(e.target.value))} className="w-20 accent-brand-violet" />
-      <span className="w-10 text-right font-mono tabular-nums">{value}</span>
-    </div>
-  ), [])
-
   if (guests.length === 0 || visibleGuests.length === 0) {
     return (
       <section className="relative z-10 overflow-hidden py-16">
@@ -312,36 +253,7 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
         {initialized && (
           <motion.div variants={containerVariants} initial="hidden" whileInView="visible"
             viewport={{ once: true, margin: '-40px' }} className="relative w-full h-full">
-            <svg className="absolute inset-0 w-full h-full pointer-events-none select-none"
-              style={{ zIndex: 0 }} aria-hidden="true">
-              {edges.map(([aId, bId], i) => {
-                const aIdx = idToSpringIdx.get(aId)
-                const bIdx = idToSpringIdx.get(bId)
-                if (aIdx === undefined && aId !== centerGuest?.id) return null
-                if (bIdx === undefined && bId !== centerGuest?.id) return null
-
-                const getSpring = (id: string, idx: number | undefined) => {
-                  if (id === centerGuest?.id) return { x: centerSpring.x, y: centerSpring.y }
-                  if (idx !== undefined) return { x: springs[idx].x, y: springs[idx].y }
-                  return null
-                }
-
-                const aS = getSpring(aId, aIdx)
-                const bS = getSpring(bId, bIdx)
-                if (!aS || !bS) return null
-
-                return (
-                  <animated.line
-                    key={`e${i}`}
-                    x1={aS.x} y1={aS.y}
-                    x2={bS.x} y2={bS.y}
-                    stroke="rgba(155,89,245,0.08)"
-                    strokeWidth={1.2}
-                    strokeLinecap="round"
-                  />
-                )
-              })}
-            </svg>
+            {/* SVG edges removed */}
 
             {orbitingGuests.map((guest, i) => {
               const spring = springs[i]
@@ -409,22 +321,7 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
         )}
       </div>
 
-      <div className="mt-8 px-4 text-center">
-        <button onClick={() => setShowDebug(p => !p)}
-          className="text-[10px] text-brand-pearl/20 hover:text-brand-pearl/50 transition-colors">
-          {showDebug ? 'Скрыть отладку' : 'Параметры физики (Spring)'}
-        </button>
-        {showDebug && (
-          <div className="mx-auto mt-3 p-3 rounded-xl border border-brand-pearl/5 bg-brand-deep/80 max-w-sm">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-              <Slider label="tension" value={springParams.tension} min={20} max={300} step={1} onChange={v => setSpringParams(p => ({ ...p, tension: v }))} />
-              <Slider label="friction" value={springParams.friction} min={1} max={50} step={1} onChange={v => setSpringParams(p => ({ ...p, friction: v }))} />
-              <Slider label="mass" value={springParams.mass} min={0.1} max={5} step={0.1} onChange={v => setSpringParams(p => ({ ...p, mass: v }))} />
-              <Slider label="minDist" value={springParams.minDistance} min={20} max={200} step={1} onChange={v => setSpringParams(p => ({ ...p, minDistance: v }))} />
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Debug sliders removed */}
     </section>
   )
 }
