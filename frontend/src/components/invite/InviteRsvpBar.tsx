@@ -104,7 +104,7 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
                 className="w-full max-w-sm pointer-events-auto"
               >
                 <div className="liquid-glass p-5 shadow-2xl">
-                  <p className="text-brand-pearl font-medium mb-3">Жаль, что не придёшь 😔</p>
+                  <p className="text-brand-pearl font-medium mb-3">{isFormal ? 'Жаль, что не придёте 😔' : 'Жаль, что не придёшь 😔'}</p>
                   <textarea
                     className="w-full bg-brand-deep border border-brand-pearl/10 rounded-xl p-3
                                text-brand-pearl/80 text-sm resize-none outline-none placeholder:text-brand-pearl/30

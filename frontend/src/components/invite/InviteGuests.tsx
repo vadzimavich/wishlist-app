@@ -201,10 +201,10 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
     isDraggingRef.current = false
     const draggedIdx = draggedGuestIdRef.current
     draggedGuestIdRef.current = null
-    try {
-      const el = graphRef.current
-      if (el) el.releasePointerCapture(e.pointerId)
-    } catch { /* pointer may not be captured if no drag started */ }
+    const el = graphRef.current
+    if (el?.hasPointerCapture(e.pointerId)) {
+      el.releasePointerCapture(e.pointerId)
+    }
 
     // Spring ALL guests back to their home orbit positions
     api.start(i => {
@@ -254,8 +254,6 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
         {initialized && (
           <motion.div variants={containerVariants} initial="hidden" whileInView="visible"
             viewport={{ once: true, margin: '-40px' }} className="relative w-full h-full">
-            {/* SVG edges removed */}
-
             {orbitingGuests.map((guest, i) => {
               const spring = springs[i]
               const isAtt = guest.rsvpStatus === 'Attending'
@@ -322,7 +320,6 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
         )}
       </div>
 
-      {/* Debug sliders removed */}
     </section>
   )
 }

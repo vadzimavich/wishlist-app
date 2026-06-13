@@ -37,6 +37,14 @@
 - `npx tsc --noEmit` passes with zero errors
 - Key pattern: simple `guestCount > 1` check is sufficient for formality logic (guestCount=1 → informal singular, guestCount>1 → formal plural)
 
+## 2026-06-13 — Task 10: Fix formal/informal gaps in RSVP badge + decline modal
+
+- **InviteHero.tsx**: Replaced `RSVP_BADGE` module-level constant with `getRsvpBadge(rsvpStatus, guestCount)` function that returns `Вы идёте! 🎉` / `Вы не придёте` when `guestCount > 1`, and `Ты идёшь! 🎉` / `Ты не придёшь` otherwise
+  - The constant approach couldn't work because `guestCount` is a runtime prop, not available at module scope
+  - Changed `const badge = RSVP_BADGE[rsvpStatus]` → `const badge = getRsvpBadge(rsvpStatus, guestCount)`
+- **InviteRsvpBar.tsx**: Changed decline modal text from static `Жаль, что не придёшь 😔` to conditional `{isFormal ? 'Жаль, что не придёте 😔' : 'Жаль, что не придёшь 😔'}` (reuses existing `isFormal = guest.guestCount > 1` from Task 6)
+- `npx tsc --noEmit` passes with zero errors
+
 ## 2026-06-13 — Tasks 7 & 8: Remove wishlist badge + heading change + sweep animation
 
 ### Changes

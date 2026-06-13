@@ -1,0 +1,62 @@
+{
+  "qa_run": "guest-families-animations",
+  "date": "2026-06-13T19:20:00Z",
+  "backend_running": false,
+  "results": {
+    "task_1_3_backend": {
+      "status": "BLOCKED",
+      "reason": "Backend ASP.NET Core not running at localhost:5000. PostgreSQL container (wishlist-db) is up but API server is not started.",
+      "blocked_scenarios": [
+        "Register user (POST /api/auth/register)",
+        "Login (POST /api/auth/login)",
+        "Create event (POST /api/events)",
+        "Add guest (POST /api/events/{id}/guests)",
+        "Rsvp (POST /api/guests/{token}/rsvp)",
+        "Get invite page (GET /api/guests/by-token/{token})",
+        "Frontend SSR rendering with real data"
+      ]
+    },
+    "task_4_frontend_types": {
+      "status": "PASS",
+      "tsc_result": "Zero errors",
+      "guestCount_field": {
+        "Guest": "present (line 72)",
+        "GuestPublic": "present (line 32)",
+        "GuestSelf": "present (line 99)"
+      }
+    },
+    "task_5_admin_form": {
+      "status": "PASS",
+      "pencil_icon": "present (events/page.tsx:203-206)",
+      "emoji_picker": "present (events/page.tsx:376-388)",
+      "name_input": "present (events/page.tsx:391-392)",
+      "guest_count_input": "present (events/page.tsx:394-397)"
+    },
+    "task_6_hero_formality": {
+      "status": "PASS",
+      "formal_guestCount_gt_1": "приглашает вас (InviteHero.tsx:209)",
+      "informal_guestCount_eq_1": "приглашает тебя (InviteHero.tsx:209)"
+    },
+    "task_7_guests_header": {
+      "status": "PASS",
+      "gradient_text_sweep": "present on 'Гости' h2 (InviteGuests.tsx:240)"
+    },
+    "task_8_wishlist_header": {
+      "status": "PASS",
+      "gradient_text_sweep": "present on 'Вишлист' h2 (InviteWishlist.tsx:112)"
+    },
+    "task_9a_no_glass_pill": {
+      "status": "PASS",
+      "finding": "No glass pill badge above wishlist heading (InviteWishlist.tsx:110-118)"
+    },
+    "task_9b_h2_wording": {
+      "status": "PASS",
+      "finding": "h2 says 'Вишлист', not 'Выбери подарок' (InviteWishlist.tsx:112)"
+    },
+    "task_9c_rsvp_bottom": {
+      "status": "PASS",
+      "finding": "RSVP bar has bottom-0 class (InviteRsvpBar.tsx:57)"
+    }
+  },
+  "verdict": "APPROVE (with note: backend verification blocked)"
+}

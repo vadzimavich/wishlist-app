@@ -1,0 +1,32 @@
+=== Task 5: Admin Edit Form ===
+Date: 2026-06-13 19:20
+Status: PASS (source verification)
+
+Source file: frontend/src/app/(admin)/events/page.tsx
+
+1. Edit button (Pencil icon) for events:
+   Lines 203-206:
+   <button onClick={() => openEditEvent(ev)}
+     className="p-1.5 rounded-lg text-admin-muted hover:text-admin-text hover:bg-admin-elevated transition-all">
+     <Pencil size={14} />
+   </button>
+   → ✅ Pencil icon imported from lucide-react (line 7: `import { ..., Pencil, ... }`)
+
+2. Edit form — inline guest editor (triggered via Pencil icon per guest):
+   Emoji picker: lines 376-388 — grid of 12 emojis with click handler setEditEmoji()
+   Name input: lines 391-392 — <input className="admin-input" placeholder="Имя *" value={editName} onChange={...}>
+   Guest count input: lines 394-397 — <input type="number" className="admin-input" min={1} value={editGuestCount} onChange={...}>
+
+3. Edit form opening logic:
+   Lines 434-438:
+   setEditingGuest({ guest, eventId: guestModal.id })
+   setEditName(guest.name)
+   setEditEmoji(guest.emoji || '🙂')
+   setEditGuestCount(guest.guestCount || 1)
+
+Result: ✅
+- Pencil icon exists on event items (for editing)
+- Inline guest edit form has emoji picker, name input, guestCount input
+- guestCount defaults to 1 if not set
+
+Note: Admin page requires JWT auth. Backend was not running, so live verification was blocked.

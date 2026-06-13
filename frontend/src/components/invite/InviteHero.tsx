@@ -17,10 +17,18 @@ interface Props {
   rsvpStatus: RsvpStatus
 }
 
-const RSVP_BADGE = {
-  Pending: null,
-  Attending: { text: 'Ты идёшь! 🎉', cls: 'text-success border-success/30 bg-success/10' },
-  NotAttending: { text: 'Ты не придёшь', cls: 'text-admin-muted border-admin-muted/30 bg-admin-muted/10' },
+function getRsvpBadge(rsvpStatus: RsvpStatus, guestCount: number) {
+  if (rsvpStatus === 'Pending') return null
+  if (rsvpStatus === 'Attending') {
+    return {
+      text: guestCount > 1 ? 'Вы идёте! 🎉' : 'Ты идёшь! 🎉',
+      cls: 'text-success border-success/30 bg-success/10',
+    }
+  }
+  return {
+    text: guestCount > 1 ? 'Вы не придёте' : 'Ты не придёшь',
+    cls: 'text-admin-muted border-admin-muted/30 bg-admin-muted/10',
+  }
 }
 
 const container = {
@@ -166,7 +174,7 @@ export function InviteHero({
 
   const formattedDate = format(new Date(eventDate), "d MMMM yyyy", { locale: ru })
   const formattedTime = format(new Date(eventDate), "HH:mm", { locale: ru })
-  const badge = RSVP_BADGE[rsvpStatus]
+  const badge = getRsvpBadge(rsvpStatus, guestCount)
 
   return (
     <section

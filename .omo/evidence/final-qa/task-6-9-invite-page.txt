@@ -1,0 +1,59 @@
+=== Tasks 6-9: Invite Page Verification ===
+Date: 2026-06-13 19:20
+Status: PASS (source verification)
+Note: Backend not running — verification done via source code analysis
+
+--- Task 6: Hero text formality ---
+Source: frontend/src/components/invite/InviteHero.tsx
+Line 209:
+  {hostName} приглашает {guestCount > 1 ? 'вас' : 'тебя'}
+→ ✅ Shows "приглашает вас" when guestCount > 1 (formal)
+   Shows "приглашает тебя" when guestCount == 1 (informal)
+Confirmed via InviteClientPage.tsx line 124:
+  guestCount={page.currentGuest.guestCount}
+
+--- Task 7: "Гости" header gradient-text-sweep ---
+Source: frontend/src/components/invite/InviteGuests.tsx
+Line 240 (populated state):
+  className="... gradient-text-sweep"
+  Content: Гости
+Line 226 (empty state):
+  <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight gradient-text-sweep">Гости</h2>
+→ ✅ Both states have gradient-text-sweep class on "Гости" heading
+
+--- Task 8: "Вишлист" header gradient-text-sweep ---
+Source: frontend/src/components/invite/InviteWishlist.tsx
+Line 112:
+  <h2 className="font-display font-bold text-3xl md:text-4xl gradient-text-sweep">
+    Вишлист
+  </h2>
+→ ✅ Has gradient-text-sweep class
+
+--- Task 9a: No glass pill badge above wishlist heading ---
+Source: frontend/src/components/invite/InviteWishlist.tsx
+Lines 110-118:
+  <section ...>
+    <div className="text-center mb-8">
+      <h2 ...>Вишлист</h2>
+      <p ...>Нажми на товар...</p>
+    </div>
+    <div className="space-y-3">
+      ...items...
+    </div>
+  </section>
+→ ✅ No glass pill badge or any badge element above or near the wishlist heading.
+   The section starts with the h2 directly in a text-center div.
+   (Previous version may have had "Выбери подарок" pill badge — now removed)
+
+--- Task 9b: h2 says "Вишлист" not "Выбери подарок" ---
+Source: frontend/src/components/invite/InviteWishlist.tsx
+Line 112-113:
+  <h2 ...>Вишлист</h2>
+→ ✅ Heading is "Вишлист", not "Выбери подарок"
+
+--- Task 9c: RSVP bar at bottom ---
+Source: frontend/src/components/invite/InviteRsvpBar.tsx
+Line 57:
+  className="fixed bottom-0 inset-x-0 ..."
+→ ✅ Has `bottom-0` class (computed style: bottom: 0px)
+   This bar is conditionally rendered only when rsvpStatus === 'Pending' (InviteClientPage.tsx line 112)
