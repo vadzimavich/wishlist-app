@@ -232,7 +232,7 @@ export function InviteHero({
           className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl lg:text-7xl
                      leading-[1.05] tracking-tight mb-6"
         >
-          <span className="gradient-text">{eventTitle}</span>
+          <span className="gradient-text-sweep">{eventTitle}</span>
         </motion.h1>
 
         {/* Date */}

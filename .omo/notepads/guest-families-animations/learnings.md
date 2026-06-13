@@ -132,3 +132,10 @@
 - Applied to both orbiting guests (54px circles) and the center guest (70px circle)
 - Text flows naturally below the circle without extending the anchor box
 - `npx tsc --noEmit` passes with zero errors
+
+## 2026-06-13 — Gradient-sweep slow down + apply to hero title
+
+- **globals.css:259**: `.gradient-text-sweep` animation duration changed from `6s` to `12s` for slower sweep
+- **InviteHero.tsx:235**: Hero h1 `<span>` className changed from `gradient-text` to `gradient-text-sweep`
+- `npx tsc --noEmit` passes with zero errors
+- `gradient-text-gold` (prices) left untouched

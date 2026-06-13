@@ -256,7 +256,7 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: gradient-sweep 6s ease infinite;
+  animation: gradient-sweep 12s ease infinite;
 }
 
 /* ─── Reduced motion ─────────────────────────────────────────────────────── */
