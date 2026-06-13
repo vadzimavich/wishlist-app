@@ -33,7 +33,7 @@ export default function DashboardPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
       <div>
-        <h1 className="text-xl font-bold text-admin-text">Обзор</h1>
+        <h1 className="text-xl font-bold font-display text-admin-text">Обзор</h1>
         <p className="text-admin-muted text-sm mt-0.5">Добро пожаловать в панель управления</p>
       </div>
 

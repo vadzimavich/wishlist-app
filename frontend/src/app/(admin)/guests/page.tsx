@@ -42,7 +42,7 @@ export default function GuestsPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-admin-text">Гости</h1>
+        <h1 className="text-xl font-bold font-display text-admin-text">Гости</h1>
         <p className="text-admin-muted text-sm mt-0.5">Все гости по всем событиям</p>
       </div>
 

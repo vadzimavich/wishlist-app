@@ -119,7 +119,7 @@ export default function EventsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-admin-text">События</h1>
+          <h1 className="text-xl font-bold font-display text-admin-text">События</h1>
           <p className="text-admin-muted text-sm mt-0.5">{events.length} событий</p>
         </div>
         <button onClick={openCreateEvent}
@@ -227,7 +227,7 @@ export default function EventsPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 max-w-lg mx-auto
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-lg
                          bg-admin-surface border border-admin-border rounded-2xl shadow-2xl overflow-hidden"
             >
               <div className="flex items-center justify-between px-6 py-4 border-b border-admin-border">

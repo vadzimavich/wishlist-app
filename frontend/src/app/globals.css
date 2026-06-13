@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Google Fonts fallback (если нет локальных шрифтов) ─────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Unbounded:wght@400;700;800&display=swap&subset=cyrillic');
-
 /* ─── CSS Variables ──────────────────────────────────────────────────────── */
 :root {
   /* Admin colors */

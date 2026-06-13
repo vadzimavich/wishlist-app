@@ -2,7 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using WishlistApp.API.Data;
 using WishlistApp.API.Hubs;
 using WishlistApp.API.Middleware;
@@ -115,13 +115,10 @@ services.AddSwaggerGen(opt =>
         Description = "Введи JWT токен (без 'Bearer ')"
     });
 
-    opt.AddSecurityRequirement(new OpenApiSecurityRequirement
+    opt.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
     {
         {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-            },
+            new OpenApiSecuritySchemeReference("Bearer", doc),
             []
         }
     });

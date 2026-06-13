@@ -53,20 +53,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         )}
       </AnimatePresence>
 
-      {/* ── Sidebar ── */}
-      <motion.aside
-        initial={false}
-        animate={{ x: sidebarOpen ? 0 : '-100%' }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed md:relative md:translate-x-0 z-50 flex flex-col w-60 h-full
-                   bg-admin-surface border-r border-admin-border shrink-0"
+      {/* ── Sidebar (desktop: always visible, mobile: animated) ── */}
+      <aside
+        className={`fixed md:static z-50 flex flex-col w-60 h-full
+                    bg-admin-surface border-r border-admin-border shrink-0
+                    transition-transform duration-300 ease-in-out
+                    ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-admin-border">
           <div className="w-8 h-8 rounded-lg bg-brand-purple/20 border border-brand-purple/30 flex items-center justify-center">
             <span className="text-sm">🎁</span>
           </div>
-          <span className="font-semibold text-admin-text">WishList</span>
+          <span className="font-semibold font-display text-admin-text">WishList</span>
           <button
             onClick={() => setSidebarOpen(false)}
             className="ml-auto md:hidden text-admin-muted hover:text-admin-text transition-colors"
@@ -123,7 +122,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Выйти
           </button>
         </div>
-      </motion.aside>
+      </aside>
 
       {/* ── Main ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -135,7 +134,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           >
             <Menu size={20} />
           </button>
-          <span className="text-admin-text font-semibold">WishList</span>
+          <span className="text-admin-text font-semibold font-display">WishList</span>
         </header>
 
         {/* Page content */}
