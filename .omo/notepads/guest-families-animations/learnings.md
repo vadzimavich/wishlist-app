@@ -76,3 +76,13 @@
 - Edit form state initialized on button click via `setEditName(guest.name)` / `setEditEmoji(guest.emoji || '🙂')` / `setEditGuestCount(guest.guestCount || 1)`
 - `Pencil` icon was already imported in the file (used for event editing), no additional import needed
 - `npx tsc --noEmit` passes with zero errors
+
+## 2026-06-13 — Task 9: Move RSVP bar from top to bottom of the page
+
+### Changes
+- **InviteRsvpBar.tsx**: Changed `fixed top-0` → `fixed bottom-0` to pin the RSVP bar to the bottom of the viewport
+- **InviteRsvpBar.tsx**: Changed `pt-3` → `pb-3` for appropriate bottom padding
+- **InviteRsvpBar.tsx**: Changed `initial={{ y: -80, ... }}` → `initial={{ y: 80, ... }}` so the bar slides up from below
+- All other classes intact, no other changes made
+- API call flow, decline note modal, text strings unchanged (formality text from Task 6 untouched)
+- `npx tsc --noEmit` passes with zero errors

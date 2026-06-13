@@ -672,7 +672,7 @@ Max Concurrent: 4 (Wave 2)
   - Message: `feat(invite): add gradient-sweep animation to headers`
   - Files: `globals.css`, `InviteGuests.tsx`, `InviteWishlist.tsx`
 
-- [ ] 9. Invite page — Move RSVP bar to bottom
+- [x] 9. Invite page — Move RSVP bar to bottom
 
   **What to do**:
   - In `InviteRsvpBar.tsx`:

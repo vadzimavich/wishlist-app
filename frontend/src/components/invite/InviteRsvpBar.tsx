@@ -51,10 +51,10 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
     <>
       {/* Sticky bar */}
       <motion.div
-        initial={{ y: -80, opacity: 0 }}
+        initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5, type: 'spring', damping: 20 }}
-        className="fixed top-0 inset-x-0 z-50 flex justify-center px-4 pt-3 pointer-events-none"
+        className="fixed bottom-0 inset-x-0 z-50 flex justify-center px-4 pb-3 pointer-events-none"
       >
         <div className="liquid-glass px-5 py-3 flex items-center gap-4 pointer-events-auto
                         shadow-2xl max-w-sm w-full">
