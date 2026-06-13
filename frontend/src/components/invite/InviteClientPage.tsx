@@ -108,10 +108,8 @@ export function InviteClientPage({ initialData, token }: Props) {
         <div className="orb orb-champagne w-[400px] h-[400px] bottom-20 left-1/4 opacity-6" />
       </div>
 
-      {/* RSVP sticky bar (if not responded) */}
-      {page.currentGuest.rsvpStatus === 'Pending' && (
-        <InviteRsvpBar guest={page.currentGuest} eventId={page.eventId} />
-      )}
+      {/* RSVP sticky bar (always visible so guests can change their mind) */}
+      <InviteRsvpBar guest={page.currentGuest} eventId={page.eventId} />
 
       {/* Hero */}
       <InviteHero

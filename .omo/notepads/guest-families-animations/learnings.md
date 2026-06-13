@@ -94,3 +94,7 @@
 - All other classes intact, no other changes made
 - API call flow, decline note modal, text strings unchanged (formality text from Task 6 untouched)
 - `npx tsc --noEmit` passes with zero errors
+
+## 2026-06-13 19:23 - RSVP bar always visible
+- Removed conditional `{page.currentGuest.rsvpStatus === 'Pending' && (...)}` wrapper around `<InviteRsvpBar>` in InviteClientPage.tsx
+- RSVP bar now renders unconditionally so guests can change their RSVP at any time
