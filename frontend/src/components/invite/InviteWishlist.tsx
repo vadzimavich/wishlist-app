@@ -7,6 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Gift, ExternalLink, Sparkles, X, Check, UserPlus } from 'lucide-react'
 import { giftsApi } from '@/lib/api'
 import { WishlistItem, ClaimType } from '@/types'
+import { formatPrice } from '@/lib/utils'
 
 interface Props {
   guestToken: string
@@ -23,19 +24,6 @@ const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
 }
 
 const DEFAULT_STATUS = { label: '', cls: 'text-admin-muted bg-admin-muted/10 border-admin-muted/20' }
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  BYN: 'Br',
-  USD: '$',
-  RUB: '₽',
-}
-
-function formatPrice(price: number | null, currency?: string): string | null {
-  if (!price) return null
-  const formatted = price.toLocaleString('ru')
-  const symbol = CURRENCY_SYMBOLS[currency ?? 'RUB'] ?? '₽'
-  return `${formatted} ${symbol}`
-}
 
 export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: Props) {
   const sectionRef = useRef<HTMLDivElement>(null)
@@ -172,7 +160,7 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
                     </p>
                     {item.price != null && (
                       <p className="gradient-text-gold text-sm font-semibold mt-0.5">
-                        {formatPrice(item.price)}
+                        {formatPrice(item.price, item.currency)}
                       </p>
                     )}
                   </div>
@@ -266,7 +254,7 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
                       <p className="text-brand-pearl font-medium">{selected.name}</p>
                       {selected.price != null && (
                         <p className="gradient-text-gold font-bold text-lg">
-                          {formatPrice(selected.price)}
+                          {formatPrice(selected.price, selected.currency)}
                         </p>
                       )}
                     </div>

@@ -90,9 +90,9 @@ public class WishlistService(AppDbContext db) : IWishlistService
 
     private static GiftClaimDto MapClaimToDto(GiftClaim claim) => new(
         claim.Id, claim.WishlistItemId,
-        new GuestPublicDto(claim.Guest.Id, claim.Guest.Name, claim.Guest.Emoji, claim.Guest.RsvpStatus),
+        new GuestPublicDto(claim.Guest.Id, claim.Guest.Name, claim.Guest.Emoji, claim.Guest.RsvpStatus, claim.Guest.GuestCount),
         claim.Type,
-        claim.Participants.Select(p => new GuestPublicDto(p.Guest.Id, p.Guest.Name, p.Guest.Emoji, p.Guest.RsvpStatus)).ToList(),
+        claim.Participants.Select(p => new GuestPublicDto(p.Guest.Id, p.Guest.Name, p.Guest.Emoji, p.Guest.RsvpStatus, p.Guest.GuestCount)).ToList(),
         claim.CreatedAt
     );
 }
@@ -139,6 +139,8 @@ public class EventService(AppDbContext db) : IEventService
             Title = request.Title.Trim(),
             Date = request.Date.ToUniversalTime(),
             Location = request.Location?.Trim(),
+            Latitude = request.Latitude,
+            Longitude = request.Longitude,
             Description = request.Description?.Trim(),
             CoverImageUrl = request.CoverImageUrl
         };
@@ -158,6 +160,8 @@ public class EventService(AppDbContext db) : IEventService
         if (request.Title is not null) ev.Title = request.Title.Trim();
         if (request.Date.HasValue) ev.Date = request.Date.Value.ToUniversalTime();
         if (request.Location is not null) ev.Location = request.Location.Trim();
+        if (request.Latitude.HasValue) ev.Latitude = request.Latitude;
+        if (request.Longitude.HasValue) ev.Longitude = request.Longitude;
         if (request.Description is not null) ev.Description = request.Description.Trim();
         if (request.CoverImageUrl is not null) ev.CoverImageUrl = request.CoverImageUrl;
         if (request.IsActive.HasValue) ev.IsActive = request.IsActive.Value;
@@ -176,10 +180,10 @@ public class EventService(AppDbContext db) : IEventService
     }
 
     private static EventDto MapToDto(Event ev) => new(
-        ev.Id, ev.Title, ev.Date, ev.Location, ev.Description, ev.CoverImageUrl,
+        ev.Id, ev.Title, ev.Date, ev.Location, ev.Latitude, ev.Longitude, ev.Description, ev.CoverImageUrl,
         ev.IsActive,
         ev.Guests.Select(g => new GuestDto(
-            g.Id, g.Name, g.Emoji, g.Token, g.RsvpStatus, g.RsvpNote,
+            g.Id, g.Name, g.Emoji, g.Token, g.RsvpStatus, g.RsvpNote, g.GuestCount,
             $"/invite/{g.Token}"
         )).ToList(),
         ev.CreatedAt
@@ -191,6 +195,7 @@ public class EventService(AppDbContext db) : IEventService
 public interface IGuestService
 {
     Task<GuestDto> AddGuestAsync(Guid userId, Guid eventId, CreateGuestRequest request);
+    Task<GuestDto> UpdateGuestAsync(Guid userId, Guid eventId, Guid guestId, UpdateGuestRequest request);
     Task DeleteGuestAsync(Guid userId, Guid eventId, Guid guestId);
     Task<InvitePageDto> GetInvitePageAsync(string token);
     Task<GuestDto> UpdateRsvpAsync(string token, RsvpRequest request);
@@ -207,7 +212,8 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
         {
             EventId = eventId,
             Name = request.Name.Trim(),
-            Emoji = string.IsNullOrWhiteSpace(request.Emoji) ? "🙂" : request.Emoji.Trim()
+            Emoji = string.IsNullOrWhiteSpace(request.Emoji) ? "🙂" : request.Emoji.Trim(),
+            GuestCount = request.GuestCount
         };
 
         db.Guests.Add(guest);
@@ -215,7 +221,28 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
 
         var baseUrl = config["App:BaseUrl"] ?? "http://localhost:3000";
         return new GuestDto(guest.Id, guest.Name, guest.Emoji,
-            guest.Token, guest.RsvpStatus, guest.RsvpNote, $"{baseUrl}/invite/{guest.Token}");
+            guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount, $"{baseUrl}/invite/{guest.Token}");
+    }
+
+    public async Task<GuestDto> UpdateGuestAsync(Guid userId, Guid eventId, Guid guestId, UpdateGuestRequest request)
+    {
+        var ev = await db.Events.FirstOrDefaultAsync(e => e.Id == eventId && e.UserId == userId)
+            ?? throw new KeyNotFoundException("Событие не найдено.");
+
+        var guest = await db.Guests.FirstOrDefaultAsync(g => g.Id == guestId && g.EventId == eventId)
+            ?? throw new KeyNotFoundException("Гость не найден.");
+
+        guest.Name = request.Name.Trim();
+        if (request.Emoji is not null)
+            guest.Emoji = string.IsNullOrWhiteSpace(request.Emoji) ? "🙂" : request.Emoji.Trim();
+        if (request.GuestCount.HasValue)
+            guest.GuestCount = request.GuestCount.Value;
+
+        await db.SaveChangesAsync();
+
+        var baseUrl = config["App:BaseUrl"] ?? "http://localhost:3000";
+        return new GuestDto(guest.Id, guest.Name, guest.Emoji,
+            guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount, $"{baseUrl}/invite/{guest.Token}");
     }
 
     public async Task DeleteGuestAsync(Guid userId, Guid eventId, Guid guestId)
@@ -256,15 +283,17 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
             EventTitle: guest.Event.Title,
             EventDate: guest.Event.Date,
             EventLocation: guest.Event.Location,
+            EventLatitude: guest.Event.Latitude,
+            EventLongitude: guest.Event.Longitude,
             EventDescription: guest.Event.Description,
             CoverImageUrl: guest.Event.CoverImageUrl,
             HostName: guest.Event.User.Name,
             HostAvatarUrl: guest.Event.User.AvatarUrl,
             Guests: guest.Event.Guests
-                .Select(g => new GuestPublicDto(g.Id, g.Name, g.Emoji, g.RsvpStatus))
+                .Select(g => new GuestPublicDto(g.Id, g.Name, g.Emoji, g.RsvpStatus, g.GuestCount))
                 .ToList(),
             WishlistItems: wishlistItems.Select(WishlistService.MapToDto).ToList(),
-            CurrentGuest: new GuestSelfDto(guest.Id, guest.Name, guest.Emoji, guest.Token, guest.RsvpStatus, guest.RsvpNote)
+            CurrentGuest: new GuestSelfDto(guest.Id, guest.Name, guest.Emoji, guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount)
         );
     }
 
@@ -280,7 +309,7 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
 
         var baseUrl = config["App:BaseUrl"] ?? "http://localhost:3000";
         return new GuestDto(guest.Id, guest.Name, guest.Emoji,
-            guest.Token, guest.RsvpStatus, guest.RsvpNote, $"{baseUrl}/invite/{guest.Token}");
+            guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount, $"{baseUrl}/invite/{guest.Token}");
     }
 }
 

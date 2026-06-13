@@ -6,9 +6,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-/** Форматирует цену с разделителями */
-export function formatPrice(price: number, currency = '₽'): string {
-  return `${price.toLocaleString('ru-RU')} ${currency}`
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  RUB: '₽',
+  BYN: 'Br',
+  USD: '$',
+}
+
+/** Форматирует цену с разделителями и символом валюты */
+export function formatPrice(price: number, currency = 'RUB'): string {
+  const symbol = CURRENCY_SYMBOLS[currency] ?? currency
+  return `${price.toLocaleString('ru-RU')} ${symbol}`
 }
 
 /** Сокращает текст */

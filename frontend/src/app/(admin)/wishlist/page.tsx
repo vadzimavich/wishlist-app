@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { Plus, Trash2, Pencil, Gift, Link2, X, Image } from 'lucide-react'
 import { wishlistApi } from '@/lib/api'
 import { WishlistItem, CreateWishlistItemForm } from '@/types'
+import { formatPrice } from '@/lib/utils'
 
 const EMPTY_FORM: CreateWishlistItemForm = {
   name: '', price: '', currency: 'RUB', photoUrl: '', sourceUrl: '', description: '',
@@ -174,9 +175,9 @@ export default function WishlistPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5">
-                    {item.price && (
+                    {item.price != null && (
                       <span className="text-xs text-admin-muted">
-                        {item.price.toLocaleString('ru')} ₽
+                        {formatPrice(item.price, item.currency)}
                       </span>
                     )}
                     {item.activeClaim && (

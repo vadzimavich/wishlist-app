@@ -29,6 +29,7 @@ export interface GuestPublic {
   id: string
   name: string
   emoji: string
+  guestCount: number
   rsvpStatus: RsvpStatus
 }
 
@@ -68,6 +69,7 @@ export interface Guest {
   name: string
   emoji: string
   token: string
+  guestCount: number
   rsvpStatus: RsvpStatus
   rsvpNote: string | null
   inviteUrl: string
@@ -78,6 +80,8 @@ export interface Event {
   title: string
   date: string
   location: string | null
+  latitude: number | null
+  longitude: number | null
   description: string | null
   coverImageUrl: string | null
   isActive: boolean
@@ -92,6 +96,7 @@ export interface GuestSelf {
   name: string
   emoji: string
   token: string
+  guestCount: number
   rsvpStatus: RsvpStatus
   rsvpNote: string | null
 }
@@ -101,6 +106,8 @@ export interface InvitePage {
   eventTitle: string
   eventDate: string
   eventLocation: string | null
+  eventLatitude: number | null
+  eventLongitude: number | null
   eventDescription: string | null
   coverImageUrl: string | null
   hostName: string
@@ -145,6 +152,8 @@ export interface CreateEventForm {
   title: string
   date: string
   location: string
+  latitude: string
+  longitude: string
   description: string
   coverImageUrl: string
 }
@@ -152,4 +161,11 @@ export interface CreateEventForm {
 export interface CreateGuestForm {
   name: string
   emoji: string
+  guestCount?: number
+}
+
+export interface UpdateGuestForm {
+  name: string
+  emoji?: string
+  guestCount?: number
 }

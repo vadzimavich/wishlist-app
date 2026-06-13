@@ -4,15 +4,14 @@ import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { MapPin, Clock } from 'lucide-react'
+import { Clock } from 'lucide-react'
 
 interface Props {
   date: string
-  location: string | null
   description: string | null
 }
 
-export function InviteDetails({ date, location, description }: Props) {
+export function InviteDetails({ date, description }: Props) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -38,7 +37,7 @@ export function InviteDetails({ date, location, description }: Props) {
     initGsap()
   }, [])
 
-  if (!location && !description) return null
+  if (!description) return null
 
   return (
     <section ref={ref} className="relative z-10 px-4 py-16 max-w-2xl mx-auto">
@@ -58,19 +57,6 @@ export function InviteDetails({ date, location, description }: Props) {
             </p>
           </div>
         </div>
-
-        {location && (
-          <div className="detail-card liquid-glass p-5 flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-brand-champagne/10 border border-brand-champagne/20
-                            flex items-center justify-center shrink-0">
-              <MapPin size={18} className="text-brand-champagne" />
-            </div>
-            <div>
-              <p className="text-brand-pearl/40 text-xs uppercase tracking-wider mb-1">Где</p>
-              <p className="text-brand-pearl font-medium">{location}</p>
-            </div>
-          </div>
-        )}
 
         {description && (
           <div className="detail-card liquid-glass p-5">

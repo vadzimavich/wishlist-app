@@ -1,0 +1,146 @@
+{
+  "schema_version": 2,
+  "active_work_id": "guest-families-animations-7b2df73a",
+  "works": {
+    "guest-node-simulation-fix-1e3e0346": {
+      "work_id": "guest-node-simulation-fix-1e3e0346",
+      "active_plan": "C:\\Users\\Admin\\Desktop\\wishlist-app\\.omo\\plans\\guest-node-simulation-fix.md",
+      "plan_name": "guest-node-simulation-fix",
+      "status": "completed",
+      "started_at": "2026-06-13T13:52:40.658Z",
+      "updated_at": "2026-06-13T14:52:07.978Z",
+      "session_ids": [
+        "opencode:ses_13ece281bffeWninTx64YDDu6g"
+      ],
+      "session_origins": {
+        "opencode:ses_13ece281bffeWninTx64YDDu6g": "direct"
+      },
+      "agent": "atlas",
+      "task_sessions": {
+        "todo:1": {
+          "task_key": "todo:1",
+          "task_label": "1",
+          "task_title": "Fix ORBIT_RADIUS to a constant (remove min/max computation), increase collision distance between circles",
+          "session_id": "opencode:ses_13e89d0a6ffeHalR8ffAGtLSVU",
+          "agent": "Sisyphus-Junior",
+          "category": "visual-engineering",
+          "started_at": "2026-06-13T13:54:06.482Z",
+          "ended_at": "2026-06-13T14:52:07.978Z",
+          "elapsed_ms": 3481496,
+          "status": "completed",
+          "updated_at": "2026-06-13T14:52:07.978Z"
+        },
+        "todo:2": {
+          "task_key": "todo:2",
+          "task_label": "2",
+          "task_title": "**Implement core drag system: pointer events + react-spring useSprings**",
+          "session_id": "opencode:ses_13eba61e0ffejlHrqWEiO7aRKj",
+          "agent": "Sisyphus-Junior",
+          "category": "visual-engineering",
+          "updated_at": "2026-06-13T14:03:23.430Z",
+          "started_at": "2026-06-13T14:01:30.601Z",
+          "status": "completed",
+          "ended_at": "2026-06-13T14:03:23.430Z",
+          "elapsed_ms": 112829
+        },
+        "todo:3": {
+          "task_key": "todo:3",
+          "task_label": "3",
+          "task_title": "**Deterministic edges + radial layout + spring debug sliders**",
+          "session_id": "opencode:ses_13eb3d056ffeLYBpDeCO1AqL1r",
+          "agent": "Sisyphus-Junior",
+          "category": "unspecified-high",
+          "updated_at": "2026-06-13T14:08:09.284Z",
+          "started_at": "2026-06-13T14:05:51.833Z",
+          "status": "completed",
+          "ended_at": "2026-06-13T14:08:09.284Z",
+          "elapsed_ms": 137451
+        },
+        "final-wave:f1": {
+          "task_key": "final-wave:f1",
+          "task_label": "F1",
+          "task_title": "**Plan Compliance Audit** — `oracle`",
+          "session_id": "opencode:ses_13eafca65ffe4725H7eTfs3Ubv",
+          "agent": "oracle",
+          "category": "",
+          "updated_at": "2026-06-13T14:29:58.959Z",
+          "started_at": "2026-06-13T14:29:34.705Z",
+          "status": "completed",
+          "ended_at": "2026-06-13T14:29:58.959Z",
+          "elapsed_ms": 24254
+        },
+        "final-wave:f2": {
+          "task_key": "final-wave:f2",
+          "task_label": "F2",
+          "task_title": "**Code Quality Review** — `unspecified-high`",
+          "session_id": "opencode:ses_13e9c14d9ffeHoPyug62wejv7Q",
+          "agent": "oracle",
+          "updated_at": "2026-06-13T14:32:08.955Z",
+          "started_at": "2026-06-13T14:31:52.506Z",
+          "status": "completed",
+          "ended_at": "2026-06-13T14:32:08.955Z",
+          "elapsed_ms": 16449
+        }
+      },
+      "ended_at": "2026-06-13T14:32:20.877Z",
+      "elapsed_ms": 2380219
+    },
+    "guest-families-animations-7b2df73a": {
+      "work_id": "guest-families-animations-7b2df73a",
+      "active_plan": "C:\\Users\\Admin\\Desktop\\wishlist-app\\.omo\\plans\\guest-families-animations.md",
+      "plan_name": "guest-families-animations",
+      "status": "active",
+      "started_at": "2026-06-13T15:57:28.125Z",
+      "updated_at": "2026-06-13T16:04:12.879Z",
+      "session_ids": [
+        "opencode:ses_13e65f47cffe2k1MddKAOXSnQB"
+      ],
+      "session_origins": {
+        "opencode:ses_13e65f47cffe2k1MddKAOXSnQB": "direct"
+      },
+      "agent": "atlas",
+      "task_sessions": {
+        "todo:1": {
+          "task_key": "todo:1",
+          "task_label": "1",
+          "task_title": "Backend — Add GuestCount to Guest entity + DTOs",
+          "session_id": "opencode:ses_13e4b8b8fffeo5SxDRc89D3Dib",
+          "agent": "Sisyphus-Junior",
+          "category": "quick",
+          "updated_at": "2026-06-13T16:04:12.879Z",
+          "started_at": "2026-06-13T16:02:50.349Z",
+          "status": "completed",
+          "ended_at": "2026-06-13T16:04:12.879Z",
+          "elapsed_ms": 82530
+        }
+      }
+    }
+  },
+  "active_plan": "C:\\Users\\Admin\\Desktop\\wishlist-app\\.omo\\plans\\guest-families-animations.md",
+  "started_at": "2026-06-13T15:57:28.125Z",
+  "status": "active",
+  "updated_at": "2026-06-13T16:04:12.879Z",
+  "session_ids": [
+    "opencode:ses_13e65f47cffe2k1MddKAOXSnQB"
+  ],
+  "session_origins": {
+    "opencode:ses_13e65f47cffe2k1MddKAOXSnQB": "direct"
+  },
+  "plan_name": "guest-families-animations",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Backend — Add GuestCount to Guest entity + DTOs",
+      "session_id": "opencode:ses_13e4b8b8fffeo5SxDRc89D3Dib",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-06-13T16:04:12.879Z",
+      "started_at": "2026-06-13T16:02:50.349Z",
+      "status": "completed",
+      "ended_at": "2026-06-13T16:04:12.879Z",
+      "elapsed_ms": 82530
+    }
+  },
+  "agent": "atlas"
+}

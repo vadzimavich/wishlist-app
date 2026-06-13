@@ -5,9 +5,11 @@ import { MapPin } from 'lucide-react'
 
 interface Props {
   location: string | null
+  latitude: number | null
+  longitude: number | null
 }
 
-export function InviteMap({ location }: Props) {
+export function InviteMap({ location, latitude, longitude }: Props) {
   const mapRef = useRef<HTMLDivElement>(null)
   const [mapLoaded, setMapLoaded] = useState(false)
   const [mapError, setMapError] = useState(false)
@@ -47,27 +49,44 @@ export function InviteMap({ location }: Props) {
     if (!mapRef.current || !window.ymaps?.Map) return
 
     try {
+      // If we have stored coordinates, use them directly; otherwise geocode
+      const hasCoords = latitude != null && longitude != null
+      const defaultCenter: [number, number] = hasCoords
+        ? [latitude, longitude]
+        : [55.751574, 37.573856]
+
       const map = new window.ymaps.Map(mapRef.current, {
-        center: [55.751574, 37.573856],
-        zoom: 13,
+        center: defaultCenter,
+        zoom: hasCoords ? 16 : 13,
         controls: ['zoomControl', 'fullscreenControl'],
       })
 
-      window.ymaps.geocode(location!).then((res: any) => {
-        const firstGeoObject = res.geoObjects.get(0)
-        if (firstGeoObject) {
-          const coords = firstGeoObject.geometry.getCoordinates()
-          map.setCenter(coords, 15)
-          const placemark = new window.ymaps.Placemark(coords, {
-            balloonContent: location,
-          }, {
-            preset: 'islands#violetDotIcon',
-            iconColor: '#8b5cf6',
-          })
-          map.geoObjects.add(placemark)
-          setMapLoaded(true)
-        }
-      }).catch(() => setMapError(true))
+      if (hasCoords) {
+        const placemark = new window.ymaps.Placemark(
+          [latitude, longitude],
+          { balloonContent: location },
+          { preset: 'islands#violetDotIcon', iconColor: '#8b5cf6' }
+        )
+        map.geoObjects.add(placemark)
+        setMapLoaded(true)
+      } else {
+        // Fallback: geocode from address text
+        window.ymaps.geocode(location!).then((res: any) => {
+          const firstGeoObject = res.geoObjects.get(0)
+          if (firstGeoObject) {
+            const coords = firstGeoObject.geometry.getCoordinates()
+            map.setCenter(coords, 15)
+            const placemark = new window.ymaps.Placemark(coords, {
+              balloonContent: location,
+            }, {
+              preset: 'islands#violetDotIcon',
+              iconColor: '#8b5cf6',
+            })
+            map.geoObjects.add(placemark)
+            setMapLoaded(true)
+          }
+        }).catch(() => setMapError(true))
+      }
     } catch {
       setMapError(true)
     }
@@ -84,7 +103,7 @@ export function InviteMap({ location }: Props) {
             <MapPin size={18} className="text-brand-champagne" />
           </div>
           <div>
-            <p className="text-brand-pearl/40 text-xs uppercase tracking-wider">Место проведения</p>
+            <p className="text-brand-pearl/40 text-xs uppercase tracking-wider">Где</p>
             <p className="text-brand-pearl font-medium text-sm">{location}</p>
           </div>
         </div>

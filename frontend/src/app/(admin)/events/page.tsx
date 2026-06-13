@@ -1,16 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { Plus, Trash2, Pencil, Calendar, Users, X, Copy, Check, Eye } from 'lucide-react'
+import { Plus, Trash2, Pencil, Calendar, Users, X, Copy, Check, Eye, MapPin } from 'lucide-react'
 import { eventsApi, guestsApi } from '@/lib/api'
 import { Event, CreateEventForm, CreateGuestForm, Guest } from '@/types'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
-const EMPTY_EVENT: CreateEventForm = { title: '', date: '', location: '', description: '', coverImageUrl: '' }
+const EMPTY_EVENT: CreateEventForm = { title: '', date: '', location: '', latitude: '', longitude: '', description: '', coverImageUrl: '' }
 const EMPTY_GUEST: CreateGuestForm = { name: '', emoji: '🙂' }
 
 function useCopyToClipboard() {
@@ -81,6 +81,8 @@ export default function EventsPage() {
       title: ev.title,
       date: format(new Date(ev.date), "yyyy-MM-dd'T'HH:mm"),
       location: ev.location ?? '',
+      latitude: ev.latitude?.toString() ?? '',
+      longitude: ev.longitude?.toString() ?? '',
       description: ev.description ?? '',
       coverImageUrl: ev.coverImageUrl ?? '',
     })
@@ -250,20 +252,32 @@ export default function EventsPage() {
                         onChange={setEF('date')} required />
                     </div>
                     <div>
-                      <label className="block text-xs text-admin-muted mb-1.5">Место</label>
-                      <input className="admin-input" placeholder="Адрес или место встречи" value={eventForm.location}
-                        onChange={setEF('location')} />
-                    </div>
-                    <div>
                       <label className="block text-xs text-admin-muted mb-1.5">Обложка (URL)</label>
                       <input className="admin-input" placeholder="https://..." value={eventForm.coverImageUrl}
                         onChange={setEF('coverImageUrl')} />
                     </div>
-                    <div>
+                    <div className="md:col-span-2">
                       <label className="block text-xs text-admin-muted mb-1.5">Описание</label>
                       <textarea className="admin-input resize-none" rows={2} value={eventForm.description}
                         onChange={setEF('description')} placeholder="Детали события..." />
                     </div>
+                  </div>
+
+                  {/* Секция адреса на карте */}
+                  <div className="border border-admin-border rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} className="text-admin-muted" />
+                      <p className="text-xs font-medium text-admin-muted uppercase tracking-wide">Место проведения</p>
+                    </div>
+                    <input className="admin-input" placeholder="Введите адрес или название места..." value={eventForm.location}
+                      onChange={setEF('location')} />
+                    <EventMapPicker
+                      address={eventForm.location}
+                      latitude={eventForm.latitude}
+                      longitude={eventForm.longitude}
+                      onPick={(lat, lng) => setEventForm(p => ({ ...p, latitude: lat.toString(), longitude: lng.toString() }))}
+                      onClear={() => setEventForm(p => ({ ...p, latitude: '', longitude: '' }))}
+                    />
                   </div>
 
                   <div className="flex gap-3 pt-2">
@@ -391,6 +405,162 @@ export default function EventsPage() {
           </>
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+// ─── Map Picker Component ────────────────────────────────────────────────────
+
+interface MapPickerProps {
+  address: string
+  latitude: string
+  longitude: string
+  onPick: (lat: number, lng: number) => void
+  onClear: () => void
+}
+
+declare global {
+  interface Window {
+    ymaps: any
+  }
+}
+
+function EventMapPicker({ address, latitude, longitude, onPick, onClear }: MapPickerProps) {
+  const mapRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<any>(null)
+  const placemarkRef = useRef<any>(null)
+  const [mapReady, setMapReady] = useState(false)
+
+  const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY
+
+  // Load Yandex Maps API
+  useEffect(() => {
+    if (!apiKey || window.ymaps) {
+      if (window.ymaps) setMapReady(true)
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${apiKey}&lang=ru_RU`
+    script.async = true
+    script.onload = () => {
+      const check = () => {
+        if (window.ymaps?.Map) setMapReady(true)
+        else setTimeout(check, 100)
+      }
+      check()
+    }
+    document.head.appendChild(script)
+  }, [apiKey])
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || mapInstanceRef.current) return
+
+    const center = latitude && longitude
+      ? [parseFloat(latitude), parseFloat(longitude)]
+      : [55.751574, 37.573856]
+
+    const map = new window.ymaps.Map(mapRef.current, {
+      center,
+      zoom: latitude && longitude ? 16 : 12,
+      controls: ['zoomControl'],
+    })
+
+    // Click handler to place pin
+    map.events.add('click', (e: any) => {
+      const coords = e.get('coords')
+      onPick(coords[0], coords[1])
+    })
+
+    mapInstanceRef.current = map
+
+    // Place existing pin if coordinates exist
+    if (latitude && longitude) {
+      const lat = parseFloat(latitude)
+      const lng = parseFloat(longitude)
+      const pm = new window.ymaps.Placemark([lat, lng], {}, {
+        preset: 'islands#violetDotIcon',
+        iconColor: '#8b5cf6',
+      })
+      map.geoObjects.add(pm)
+      placemarkRef.current = pm
+    }
+  }, [mapReady])
+
+  // Update placemark when coordinates change
+  useEffect(() => {
+    if (!mapInstanceRef.current) return
+    const map = mapInstanceRef.current
+
+    // Remove old placemark
+    if (placemarkRef.current) {
+      map.geoObjects.remove(placemarkRef.current)
+      placemarkRef.current = null
+    }
+
+    if (latitude && longitude) {
+      const lat = parseFloat(latitude)
+      const lng = parseFloat(longitude)
+      const pm = new window.ymaps.Placemark([lat, lng], {}, {
+        preset: 'islands#violetDotIcon',
+        iconColor: '#8b5cf6',
+      })
+      map.geoObjects.add(pm)
+      placemarkRef.current = pm
+      map.setCenter([lat, lng], 16)
+    }
+  }, [latitude, longitude])
+
+  // Geocode address when it changes (if no manual pin)
+  useEffect(() => {
+    if (!mapInstanceRef.current || !address || (latitude && longitude)) return
+
+    const timer = setTimeout(() => {
+      window.ymaps.geocode(address).then((res: any) => {
+        const first = res.geoObjects.get(0)
+        if (first) {
+          const coords = first.geometry.getCoordinates()
+          mapInstanceRef.current.setCenter(coords, 14)
+        }
+      }).catch(() => {})
+    }, 800)
+
+    return () => clearTimeout(timer)
+  }, [address, latitude, longitude])
+
+  if (!apiKey) {
+    return (
+      <p className="text-xs text-admin-muted">
+        Для отображения карты добавьте <code>NEXT_PUBLIC_YANDEX_MAPS_API_KEY</code> в .env.local
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <div
+        ref={mapRef}
+        className="w-full h-[250px] rounded-xl bg-admin-elevated border border-admin-border cursor-crosshair"
+      />
+      {latitude && longitude ? (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-admin-muted">
+            📍 {parseFloat(latitude).toFixed(5)}, {parseFloat(longitude).toFixed(5)}
+          </p>
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-xs text-danger hover:underline"
+          >
+            Убрать точку
+          </button>
+        </div>
+      ) : (
+        <p className="text-xs text-admin-muted">
+          Нажмите на карту, чтобы поставить точку
+        </p>
+      )}
     </div>
   )
 }

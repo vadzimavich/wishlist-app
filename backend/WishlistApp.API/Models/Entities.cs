@@ -74,6 +74,8 @@ public class Event
     public string Title { get; set; } = string.Empty;
     public DateTime Date { get; set; }
     public string? Location { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
     public string? Description { get; set; }
     public string? CoverImageUrl { get; set; }
     public bool IsActive { get; set; } = true;
@@ -100,6 +102,7 @@ public class Guest
 
     public string Name { get; set; } = string.Empty;
     public string Emoji { get; set; } = "🙂";
+    public int GuestCount { get; set; } = 1;
     public string Token { get; set; } = Guid.NewGuid().ToString("N"); // Уникальный токен для ссылки
     public RsvpStatus RsvpStatus { get; set; } = RsvpStatus.Pending;
     public string? RsvpNote { get; set; }

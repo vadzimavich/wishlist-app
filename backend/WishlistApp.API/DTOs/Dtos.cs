@@ -77,6 +77,8 @@ public record EventDto(
     string Title,
     DateTime Date,
     string? Location,
+    double? Latitude,
+    double? Longitude,
     string? Description,
     string? CoverImageUrl,
     bool IsActive,
@@ -88,6 +90,8 @@ public record CreateEventRequest(
     [Required, MaxLength(200)] string Title,
     [Required] DateTime Date,
     [MaxLength(500)] string? Location,
+    double? Latitude,
+    double? Longitude,
     [MaxLength(2000)] string? Description,
     string? CoverImageUrl
 );
@@ -96,6 +100,8 @@ public record UpdateEventRequest(
     [MaxLength(200)] string? Title,
     DateTime? Date,
     [MaxLength(500)] string? Location,
+    double? Latitude,
+    double? Longitude,
     [MaxLength(2000)] string? Description,
     string? CoverImageUrl,
     bool? IsActive
@@ -110,12 +116,20 @@ public record GuestDto(
     string Token,
     RsvpStatus RsvpStatus,
     string? RsvpNote,
+    int GuestCount,
     string InviteUrl  // Генерируется динамически
 );
 
 public record CreateGuestRequest(
     [Required, MaxLength(100)] string Name,
-    [MaxLength(10)] string Emoji = "🙂"
+    [MaxLength(10)] string Emoji = "🙂",
+    [Range(1, int.MaxValue)] int GuestCount = 1
+);
+
+public record UpdateGuestRequest(
+    [Required, MaxLength(100)] string Name,
+    [MaxLength(10)] string? Emoji,
+    [Range(1, int.MaxValue)] int? GuestCount
 );
 
 public record RsvpRequest(
@@ -130,20 +144,23 @@ public record InvitePageDto(
     string EventTitle,
     DateTime EventDate,
     string? EventLocation,
+    double? EventLatitude,
+    double? EventLongitude,
     string? EventDescription,
     string? CoverImageUrl,
     string HostName,
     string? HostAvatarUrl,
-    List<GuestPublicDto> Guests,        // Статусы гостей без контактов
+    List<GuestPublicDto> Guests,
     List<WishlistItemDto> WishlistItems,
-    GuestSelfDto CurrentGuest           // Данные текущего гостя
+    GuestSelfDto CurrentGuest
 );
 
 public record GuestPublicDto(
     Guid Id,
     string Name,
     string Emoji,
-    RsvpStatus RsvpStatus
+    RsvpStatus RsvpStatus,
+    int GuestCount
 );
 
 public record GuestSelfDto(
@@ -152,7 +169,8 @@ public record GuestSelfDto(
     string Emoji,
     string Token,
     RsvpStatus RsvpStatus,
-    string? RsvpNote
+    string? RsvpNote,
+    int GuestCount
 );
 
 // ─── GiftClaim ────────────────────────────────────────────────────────────────

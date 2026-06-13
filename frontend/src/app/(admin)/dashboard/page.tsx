@@ -7,6 +7,7 @@ import { eventsApi, wishlistApi } from '@/lib/api'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { WishlistItemStatus } from '@/types'
+import { formatPrice } from '@/lib/utils'
 
 const statusLabel: Record<WishlistItemStatus, string> = {
   Available: 'Свободен',
@@ -113,8 +114,8 @@ export default function DashboardPage() {
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-admin-text truncate">{item.name}</p>
-                    {item.price && (
-                      <p className="text-xs text-admin-muted">{item.price.toLocaleString('ru')} ₽</p>
+                    {item.price != null && (
+                      <p className="text-xs text-admin-muted">{formatPrice(item.price, item.currency)}</p>
                     )}
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full shrink-0 ${

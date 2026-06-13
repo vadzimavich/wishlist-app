@@ -75,6 +75,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(g => g.Token).IsUnique();
             e.Property(g => g.Name).HasMaxLength(100).IsRequired();
             e.Property(g => g.Token).HasMaxLength(64).IsRequired();
+            e.Property(g => g.GuestCount).IsRequired().HasDefaultValue(1);
             e.Property(g => g.RsvpStatus).HasConversion<string>();
 
             e.HasOne(g => g.Event)

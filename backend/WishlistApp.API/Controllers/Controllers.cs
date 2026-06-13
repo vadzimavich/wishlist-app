@@ -149,6 +149,13 @@ public class EventsController(IEventService eventService, IGuestService guestSer
         return ApiCreated(guest, "Гость добавлен.");
     }
 
+    [HttpPut("{eventId:guid}/guests/{guestId:guid}")]
+    public async Task<IActionResult> UpdateGuest(Guid eventId, Guid guestId, [FromBody] UpdateGuestRequest request)
+    {
+        var guest = await guestService.UpdateGuestAsync(CurrentUserId, eventId, guestId, request);
+        return ApiOk(guest, "Гость обновлён.");
+    }
+
     [HttpDelete("{eventId:guid}/guests/{guestId:guid}")]
     public async Task<IActionResult> RemoveGuest(Guid eventId, Guid guestId)
     {
@@ -186,7 +193,7 @@ public class GuestsController(IGuestService guestService, IWishlistHubService hu
         var pageDto = await guestService.GetInvitePageAsync(token);
         await hub.NotifyGuestRsvpUpdatedAsync(
             pageDto.EventId,
-            new GuestPublicDto(guest.Id, guest.Name, guest.Emoji, guest.RsvpStatus)
+            new GuestPublicDto(guest.Id, guest.Name, guest.Emoji, guest.RsvpStatus, guest.GuestCount)
         );
 
         return ApiOk(guest);

@@ -38,6 +38,13 @@ export function InviteClientPage({ initialData, token }: Props) {
     }
   }, [page?.wishlistItems, setItems])
 
+  // Sync guests list from fetched page data
+  useEffect(() => {
+    if (page?.guests) {
+      setGuests(page.guests)
+    }
+  }, [page?.guests])
+
   // Real-time updates via SignalR
   useWishlistRealtime({
     eventId: page?.eventId,
@@ -120,12 +127,11 @@ export function InviteClientPage({ initialData, token }: Props) {
       {/* Details */}
       <InviteDetails
         date={page.eventDate}
-        location={page.eventLocation}
         description={page.eventDescription}
       />
 
       {/* Map */}
-      <InviteMap location={page.eventLocation} />
+      <InviteMap location={page.eventLocation} latitude={page.eventLatitude} longitude={page.eventLongitude} />
 
       {/* Guests */}
       <InviteGuests guests={guests} currentGuestId={page.currentGuest.id} />

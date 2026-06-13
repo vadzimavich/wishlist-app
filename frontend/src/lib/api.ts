@@ -10,6 +10,7 @@ import {
   InvitePage,
   ParsedProduct,
   RsvpStatus,
+  UpdateGuestForm,
   WishlistItem,
   ClaimType,
 } from '@/types'
@@ -168,7 +169,16 @@ export const eventsApi = {
 
 export const guestsApi = {
   addGuest: async (eventId: string, form: CreateGuestForm): Promise<Guest> => {
-    const { data } = await api.post(`/events/${eventId}/guests`, form)
+    const { data } = await api.post(`/events/${eventId}/guests`, {
+      name: form.name,
+      emoji: form.emoji,
+      ...(form.guestCount !== undefined && { guestCount: form.guestCount }),
+    })
+    return data.data
+  },
+
+  updateGuest: async (eventId: string, guestId: string, form: UpdateGuestForm): Promise<Guest> => {
+    const { data } = await api.put(`/events/${eventId}/guests/${guestId}`, form)
     return data.data
   },
 
