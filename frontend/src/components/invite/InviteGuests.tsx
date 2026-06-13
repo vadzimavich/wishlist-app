@@ -11,7 +11,7 @@ interface Props {
 }
 
 const MARGIN = 50
-const ORBIT_RADIUS = 150
+const HONEYCOMB_SPACING = 95
 
 function generateEdges(ids: string[], centerId?: string): [string, string][] {
   const sorted = [...ids].sort()
@@ -95,30 +95,28 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
     return map
   }, [orbitingGuests])
 
-  function computeRadialLayout(count: number, cx: number, cy: number): { x: number; y: number }[] {
+  function computeGridLayout(count: number, cx: number, cy: number): { x: number; y: number }[] {
     if (count <= 1) return Array.from({ length: count }, () => ({ x: cx, y: cy }))
 
-    // Single ring for small groups
-    if (count <= 12) {
-      return Array.from({ length: count }, (_, i) => {
-        const angle = (i / count) * Math.PI * 2 - Math.PI / 2
-        return {
-          x: cx + Math.cos(angle) * ORBIT_RADIUS,
-          y: cy + Math.sin(angle) * ORBIT_RADIUS,
-        }
-      })
+    const positions: { x: number; y: number }[] = []
+    let layer = 1
+
+    while (positions.length < count) {
+      const cellsInLayer = 6 * layer
+      const radius = HONEYCOMB_SPACING * layer
+      const angleOffset = (layer % 2) * (Math.PI / 6) // alternate offset for honeycomb zigzag
+
+      for (let i = 0; i < cellsInLayer && positions.length < count; i++) {
+        const angle = (i / cellsInLayer) * Math.PI * 2 + angleOffset
+        positions.push({
+          x: cx + Math.cos(angle) * radius,
+          y: cy + Math.sin(angle) * radius,
+        })
+      }
+      layer++
     }
 
-    // Multi-ring spiral for 12+ guests
-    return Array.from({ length: count }, (_, i) => {
-      const t = i / count
-      const angle = t * Math.PI * 4 - Math.PI / 2
-      const r = ORBIT_RADIUS * (0.6 + t * 0.4)
-      return {
-        x: cx + Math.cos(angle) * r,
-        y: cy + Math.sin(angle) * r,
-      }
-    })
+    return positions
   }
 
   useEffect(() => {
@@ -131,7 +129,7 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
       const cx = w / 2, cy = h / 2
 
       if (orbitingGuests.length > 0) {
-        const positions = computeRadialLayout(orbitingGuests.length, cx, cy)
+        const positions = computeGridLayout(orbitingGuests.length, cx, cy)
         homePositionsRef.current = positions
         api.start(i => ({
           x: positions[i].x,
