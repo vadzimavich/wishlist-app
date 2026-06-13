@@ -32,7 +32,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
   const isDraggingRef = useRef(false)
   const homePositionsRef = useRef<{ x: number; y: number }[]>([])
 
-  const visibleGuests = useMemo(() => guests.filter(g => g.rsvpStatus !== 'NotAttending'), [guests])
+  const visibleGuests = useMemo(() => guests.filter(g => g.id === currentGuestId || g.rsvpStatus !== 'NotAttending'), [guests, currentGuestId])
   const attending = useMemo(() => guests.filter(g => g.rsvpStatus === 'Attending').length, [guests])
   const orbitingGuests = useMemo(() => visibleGuests.filter(g => g.id !== currentGuestId), [visibleGuests, currentGuestId])
   const centerGuest = useMemo(() => visibleGuests.find(g => g.id === currentGuestId), [visibleGuests, currentGuestId])
@@ -265,8 +265,9 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
                   <animated.div
                     style={{
                       position: 'absolute',
-                      left: spring.x.to(x => `${x - 27}px`),
-                      top: spring.y.to(y => `${y - 27}px`),
+                      left: spring.x.to(x => `${x}px`),
+                      top: spring.y.to(y => `${y}px`),
+                      transform: 'translate(-50%, -50%)',
                       touchAction: 'none',
                       cursor: 'grab',
                     }}
@@ -295,8 +296,9 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
                 <motion.div key={centerGuest.id} variants={nodeVariants}>
                   <animated.div style={{
                     position: 'absolute',
-                    left: centerSpring.x.to(x => `${x - 35}px`),
-                    top: centerSpring.y.to(y => `${y - 35}px`),
+                    left: centerSpring.x.to(x => `${x}px`),
+                    top: centerSpring.y.to(y => `${y}px`),
+                    transform: 'translate(-50%, -50%)',
                     zIndex: 10,
                   }}>
                     <div className="flex flex-col items-center gap-2 select-none">

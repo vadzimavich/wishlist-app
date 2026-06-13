@@ -113,3 +113,22 @@
 ## 2026-06-13 19:23 - RSVP bar always visible
 - Removed conditional `{page.currentGuest.rsvpStatus === 'Pending' && (...)}` wrapper around `<InviteRsvpBar>` in InviteClientPage.tsx
 - RSVP bar now renders unconditionally so guests can change their RSVP at any time
+
+## 2026-06-13 — Fix: Current guest always visible + center-based positioning
+
+### Issue 1: Current guest filtered out when NotAttending
+- **File**: `InviteGuests.tsx:35`
+- **Before**: `guests.filter(g => g.rsvpStatus !== 'NotAttending')`
+- **After**: `guests.filter(g => g.id === currentGuestId || g.rsvpStatus !== 'NotAttending')`
+- This ensures the current guest (identified by `currentGuestId`) remains visible in the grid regardless of their RSVP status
+- Added `currentGuestId` to the useMemo dependency array so the filter recalculates when it changes
+- Other guests with `NotAttending` are still filtered out as before
+
+### Issue 2: Text positioning under circles
+- Grid layout computes (x, y) as exact circle CENTER positions in the container
+- **Before**: `left: spring.x.to(x => \`${x - halfSize}px\`)` — manually offset by half the circle size to approximate centering, causing text to break grid alignment
+- **After**: `left: spring.x.to(x => \`${x}px\`)` + `transform: 'translate(-50%, -50%)'`
+- `translate(-50%, -50%)` centers the element at its own center point, making (x, y) the true center of the circle
+- Applied to both orbiting guests (54px circles) and the center guest (70px circle)
+- Text flows naturally below the circle without extending the anchor box
+- `npx tsc --noEmit` passes with zero errors
