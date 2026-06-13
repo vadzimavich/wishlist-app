@@ -11,7 +11,8 @@ interface Props {
 }
 
 const MARGIN = 50
-const HONEYCOMB_SPACING = 95
+const GRID_SPACING_X = 160  // horizontal cell spacing (stretched)
+const GRID_SPACING_Y = 100   // vertical cell spacing
 
 function generateEdges(ids: string[], centerId?: string): [string, string][] {
   const sorted = [...ids].sort()
@@ -98,25 +99,35 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
   function computeGridLayout(count: number, cx: number, cy: number): { x: number; y: number }[] {
     if (count <= 1) return Array.from({ length: count }, () => ({ x: cx, y: cy }))
 
-    const positions: { x: number; y: number }[] = []
-    let layer = 1
+    // Build a grid large enough to hold all orbiting guests
+    // Center position (0,0) is reserved for the center guest
+    // Fill cells closest to center first in diamond pattern
 
-    while (positions.length < count) {
-      const cellsInLayer = 6 * layer
-      const radius = HONEYCOMB_SPACING * layer
-      const angleOffset = (layer % 2) * (Math.PI / 6) // alternate offset for honeycomb zigzag
+    const halfSize = Math.ceil(Math.sqrt(count)) + 2
+    const cells: { col: number; row: number; distSq: number }[] = []
 
-      for (let i = 0; i < cellsInLayer && positions.length < count; i++) {
-        const angle = (i / cellsInLayer) * Math.PI * 2 + angleOffset
-        positions.push({
-          x: cx + Math.cos(angle) * radius,
-          y: cy + Math.sin(angle) * radius,
-        })
+    for (let row = -halfSize; row <= halfSize; row++) {
+      for (let col = -halfSize; col <= halfSize; col++) {
+        if (col === 0 && row === 0) continue // skip center (reserved for center guest)
+        const distSq = col * col + row * row
+        cells.push({ col, row, distSq })
       }
-      layer++
     }
 
-    return positions
+    // Sort by distance from center (fill closest first!)
+    cells.sort((a, b) => a.distSq - b.distSq)
+
+    // Take only what we need
+    const selected = cells.slice(0, count)
+
+    // Convert to screen coordinates with rhombus row offset
+    return selected.map(({ col, row }) => {
+      const halfOffset = (row % 2) * (GRID_SPACING_X / 2) // odd rows shifted right
+      return {
+        x: cx + col * GRID_SPACING_X + halfOffset,
+        y: cy + row * GRID_SPACING_Y,
+      }
+    })
   }
 
   useEffect(() => {
