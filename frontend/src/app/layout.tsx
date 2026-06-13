@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import localFont from 'next/font/local'
+import { Inter, Unbounded } from 'next/font/google'
 import { Providers } from './providers'
 import './globals.css'
 
@@ -10,30 +9,11 @@ const inter = Inter({
   display: 'swap',
 })
 
-// Unbounded — современный geometric sans с поддержкой кириллицы
-// Загружаем через Google Fonts API
-const unbounded = localFont({
-  src: [
-    {
-      path: '../../public/fonts/Unbounded-Regular.woff2',
-      weight: '400',
-      style: 'normal',
-    },
-    {
-      path: '../../public/fonts/Unbounded-Bold.woff2',
-      weight: '700',
-      style: 'normal',
-    },
-    {
-      path: '../../public/fonts/Unbounded-ExtraBold.woff2',
-      weight: '800',
-      style: 'normal',
-    },
-  ],
+const unbounded = Unbounded({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '700', '800'],
   variable: '--font-unbounded',
   display: 'swap',
-  preload: false, // Загружаем только для invite страниц
-  fallback: ['system-ui', 'sans-serif'],
 })
 
 export const metadata: Metadata = {

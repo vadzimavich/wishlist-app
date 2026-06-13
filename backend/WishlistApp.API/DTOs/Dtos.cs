@@ -180,26 +180,6 @@ public record CancelClaimRequest(
     [Required] string GuestToken
 );
 
-// ─── Media ────────────────────────────────────────────────────────────────────
-
-public record UploadSignatureResponse(
-    string Signature,
-    long Timestamp,
-    string CloudName,
-    string ApiKey,
-    string UploadPreset
-);
-
-public record MediaUploadRequest(
-    [Required] string Base64Image,
-    string? Folder
-);
-
-public record MediaUploadResponse(
-    string Url,
-    string PublicId
-);
-
 // ─── Parser ───────────────────────────────────────────────────────────────────
 
 public record ParseUrlRequest(

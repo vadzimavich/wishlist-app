@@ -27,7 +27,6 @@ services.AddScoped<IWishlistService, WishlistService>();
 services.AddScoped<IEventService, EventService>();
 services.AddScoped<IGuestService, GuestService>();
 services.AddScoped<IGiftService, GiftService>();
-services.AddScoped<IMediaService, MediaService>();
 services.AddScoped<IParserService, ParserService>();
 services.AddSingleton<IWishlistHubService, WishlistHubService>();
 

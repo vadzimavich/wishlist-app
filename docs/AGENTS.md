@@ -195,9 +195,9 @@ components/
 
 1. **Render Free Tier**: `Keep-Alive` пинг необходим (UptimeRobot)
 2. **Supabase Free Tier**: пауза после 7 дней → включи в настройках "Disable project pausing"
-3. **Cloudinary**: загрузка изображений — прямо с фронтенда через unsigned preset, НЕ через бэкенд
+3. **Изображения**: используются прямые ссылки с маркетплейсов. Домены маркетплейсов разрешены в `next.config.ts → images.remotePatterns`
 4. **SignalR CORS**: `withCredentials: false` — гостевые соединения без cookies
-5. **Next.js Image**: обязательно добавь Cloudinary домен в `next.config.ts → images.domains`
+5. **Next.js Image**: разрешённые домены изображений указаны в `next.config.ts → images.remotePatterns`
 6. **Yandex Maps API**: ключ хранится в `NEXT_PUBLIC_YANDEX_MAPS_API_KEY` (фронтенд only). Бесплатно до 100 000 загрузок карт в месяц. Получить ключ: https://developer.tech.yandex.ru/
 
 ---
@@ -226,7 +226,6 @@ npx playwright test
 
 - Refresh tokens хранятся в HttpOnly Secure cookies (не доступны из JS)
 - Guest tokens — UUID v4, нет sequential enumeration
-- Cloudinary API Secret **никогда** не попадает во фронтенд
 - Все пользовательские inputы санируются через EF Core параметризованные запросы
 - CORS: только whitelist доменов
 - Rate limiting: 100 req/min на IP (реализовано через `AspNetCoreRateLimit`)

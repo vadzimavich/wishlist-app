@@ -32,7 +32,7 @@
 | **Real-time** | SignalR | Встроен в ASP.NET, WebSocket + fallback |
 | **БД** | PostgreSQL + EF Core 8 | Реляции, бесплатно на Supabase |
 | **Авторизация** | JWT + Refresh tokens | Stateless, масштабируемо |
-| **Изображения** | Cloudinary (free tier) | CDN + трансформации on-the-fly |
+| **Изображения** | Прямые ссылки с маркетплейсов | Изображения хранятся по оригинальному URL (Wildberries, Ozon, AliExpress и др.) |
 | **Карты** | Yandex Maps API (free tier) | Интерактивная карта места проведения (до 100K загрузок/мес) |
 | **Deploy FE** | Vercel (free) | Native Next.js support |
 | **Deploy BE** | Render (free tier) | Docker-контейнер, 750h/месяц |

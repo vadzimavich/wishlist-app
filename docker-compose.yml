@@ -37,9 +37,6 @@ services:
       Jwt__Audience: wishlist-client
       AllowedOrigins: http://localhost:3000
       App__BaseUrl: http://localhost:3000
-      Cloudinary__CloudName: ${CLOUDINARY_CLOUD_NAME:-}
-      Cloudinary__ApiKey: ${CLOUDINARY_API_KEY:-}
-      Cloudinary__ApiSecret: ${CLOUDINARY_API_SECRET:-}
       MigrateOnStartup: 'true'
     depends_on:
       postgres:
@@ -56,8 +53,6 @@ services:
       - '3000:3000'
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:5000
-      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
-      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: wishlist
     depends_on:
       - api
 

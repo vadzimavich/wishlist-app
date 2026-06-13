@@ -4,7 +4,8 @@
 - **Vercel** — Next.js frontend
 - **Render** — ASP.NET Core backend (Docker)
 - **Supabase** — PostgreSQL база данных
-- **Cloudinary** — хранилище изображений
+
+> Изображения хранятся по прямым ссылкам с маркетплейсов (Wildberries, Ozon, AliExpress и др.) — дополнительные сервисы не требуются.
 
 ---
 
@@ -20,29 +21,13 @@
 
 ---
 
-## 2. Cloudinary (изображения)
+## 2. Render (ASP.NET Core Backend)
 
-1. Зарегистрируйся на [cloudinary.com](https://cloudinary.com)
-2. Dashboard → скопируй:
-   - `Cloud Name`
-   - `API Key`
-   - `API Secret`
-3. Создай Upload Preset: Settings → Upload → Add upload preset
-   - Mode: **Unsigned** (для прямой загрузки с фронтенда)
-   - Folder: `wishlist`
-   - Сохрани имя пресета
-
-> Free tier: 25GB storage, 25GB bandwidth/месяц — более чем достаточно.
-
----
-
-## 3. Render (ASP.NET Core Backend)
-
-### 3.1 Подготовка Docker-образа
+### 2.1 Подготовка Docker-образа
 
 Убедись что `backend/WishlistApp.API/Dockerfile` существует (он уже в репозитории).
 
-### 3.2 Создание сервиса
+### 2.2 Создание сервиса
 
 1. Зарегистрируйся на [render.com](https://render.com) через GitHub
 2. **New → Web Service**
@@ -65,16 +50,13 @@
    Jwt__Audience=wishlist-client
    Jwt__ExpiryMinutes=60
    Jwt__RefreshExpiryDays=30
-   Cloudinary__CloudName=<твой cloud name>
-   Cloudinary__ApiKey=<твой api key>
-   Cloudinary__ApiSecret=<твой api secret>
    AllowedOrigins=https://your-app.vercel.app
    ```
 6. **Create Web Service** — первый деплой займёт 5–10 минут
 
 > ⚠️ Free tier: сервис засыпает после 15 минут бездействия, холодный старт ~30 секунд. Для продакшена рассмотри Render Starter ($7/месяц) или Railway.
 
-### 3.3 Запуск миграций БД
+### 2.3 Запуск миграций БД
 
 После успешного деплоя открой **Shell** в Render:
 ```bash
@@ -85,7 +67,7 @@ dotnet ef database update --no-build
 
 ---
 
-## 4. Vercel (Next.js Frontend)
+## 3. Vercel (Next.js Frontend)
 
 1. Зарегистрируйся на [vercel.com](https://vercel.com) через GitHub
 2. **Add New Project** → импортируй репозиторий
@@ -99,8 +81,6 @@ dotnet ef database update --no-build
 4. Environment Variables:
    ```
    NEXT_PUBLIC_API_URL=https://wishlist-api.onrender.com
-   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=<твой cloud name>
-   NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=wishlist
    NEXT_PUBLIC_YANDEX_MAPS_API_KEY=<твой API-ключ Яндекс Карт>
    ```
 5. **Deploy**
@@ -112,7 +92,7 @@ dotnet ef database update --no-build
 
 ---
 
-## 5. GitHub Actions (CI/CD)
+## 4. GitHub Actions (CI/CD)
 
 ```yaml
 # .github/workflows/deploy.yml
@@ -138,7 +118,7 @@ jobs:
 
 ---
 
-## 6. Переменные окружения — сводная таблица
+## 5. Переменные окружения — сводная таблица
 
 | Переменная | Где используется | Описание |
 |---|---|---|
@@ -146,17 +126,13 @@ jobs:
 | `Jwt__Key` | Render | Секретный ключ JWT (32+ символов) |
 | `Jwt__Issuer` | Render | Издатель токена (`wishlist-api`) |
 | `Jwt__Audience` | Render | Аудитория токена (`wishlist-client`) |
-| `Cloudinary__CloudName` | Render + Vercel | Имя Cloudinary аккаунта |
-| `Cloudinary__ApiKey` | Render | Cloudinary API Key |
-| `Cloudinary__ApiSecret` | Render | Cloudinary API Secret |
 | `AllowedOrigins` | Render | URL Vercel-приложения (CORS) |
 | `NEXT_PUBLIC_API_URL` | Vercel | URL Render бэкенда |
-| `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` | Vercel | Имя unsigned upload preset |
 | `NEXT_PUBLIC_YANDEX_MAPS_API_KEY` | Vercel | API-ключ Яндекс Карт (бесплатно до 100K загрузок/мес) |
 
 ---
 
-## 7. Локальный запуск через Docker Compose
+## 6. Локальный запуск через Docker Compose
 
 ```bash
 # Скопируй и заполни .env
@@ -184,7 +160,7 @@ docker compose down -v
 
 ---
 
-## 8. Troubleshooting
+## 7. Troubleshooting
 
 ### CORS ошибки
 - Проверь `AllowedOrigins` в Render (должен точно совпадать с URL Vercel, без слеша в конце)

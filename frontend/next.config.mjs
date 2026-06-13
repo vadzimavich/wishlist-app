@@ -1,20 +1,21 @@
-import type { NextConfig } from 'next'
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   output: 'standalone',
   images: {
     remotePatterns: [
-      { hostname: 'res.cloudinary.com' },
       { hostname: 'images.unsplash.com' },
       { hostname: '*.wildberries.ru' },
+      { hostname: '*.wbbasket.ru' },
       { hostname: '*.ozon.ru' },
-      { hostname: 'basket-*.wbbasket.ru' },
+      { hostname: '*.aliexpress.com' },
+      { hostname: '*.mvideo.ru' },
+      { hostname: '*.dns-shop.ru' },
+      { hostname: '*.megamarket.ru' },
+      { hostname: '*.lamoda.ru' },
+      { hostname: '*.entry.ru' },
     ],
   },
-  // Отключаем строгий режим в продакшене для GSAP
   reactStrictMode: process.env.NODE_ENV !== 'production',
-
-  // Оптимизация для мобильных
   experimental: {
     optimizeCss: true,
   },
