@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { guestsApi } from '@/lib/api'
 import { InvitePage, GuestPublic } from '@/types'
@@ -54,6 +54,16 @@ export function InviteClientPage({ initialData, token }: Props) {
       )
     },
   })
+
+  // Merge currentGuest's RSVP status into guests array so RSVP changes are reflected immediately
+  const mergedGuests = useMemo(() => {
+    if (!page?.currentGuest || !guests.length) return guests
+    return guests.map(g =>
+      g.id === page.currentGuest.id
+        ? { ...g, rsvpStatus: page.currentGuest.rsvpStatus }
+        : g
+    )
+  }, [guests, page?.currentGuest])
 
   // Lenis smooth scroll
   useEffect(() => {
@@ -132,8 +142,8 @@ export function InviteClientPage({ initialData, token }: Props) {
       {/* Map */}
       <InviteMap location={page.eventLocation} latitude={page.eventLatitude} longitude={page.eventLongitude} />
 
-      {/* Guests */}
-      <InviteGuests guests={guests} currentGuestId={page.currentGuest.id} currentGuestCount={page.currentGuest.guestCount} />
+      {/* Guests — merge currentGuest's RSVP status so it's never stale after RSVP */}
+      <InviteGuests guests={mergedGuests} currentGuestId={page.currentGuest.id} currentGuestCount={page.currentGuest.guestCount} />
 
       {/* Wishlist */}
       <InviteWishlist

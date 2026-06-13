@@ -32,7 +32,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
   const isDraggingRef = useRef(false)
   const homePositionsRef = useRef<{ x: number; y: number }[]>([])
 
-  const visibleGuests = useMemo(() => guests.filter(g => g.id === currentGuestId || g.rsvpStatus !== 'NotAttending'), [guests, currentGuestId])
+  const visibleGuests = useMemo(() => guests.filter(g => g.rsvpStatus !== 'NotAttending'), [guests])
   const attending = useMemo(() => guests.filter(g => g.rsvpStatus === 'Attending').length, [guests])
   const orbitingGuests = useMemo(() => visibleGuests.filter(g => g.id !== currentGuestId), [visibleGuests, currentGuestId])
   const centerGuest = useMemo(() => visibleGuests.find(g => g.id === currentGuestId), [visibleGuests, currentGuestId])
@@ -54,15 +54,14 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
     if (count <= 1) return Array.from({ length: count }, () => ({ x: cx, y: cy }))
 
     // Build a grid large enough to hold all orbiting guests
-    // Center position (0,0) is reserved for the center guest
     // Fill cells closest to center first in diamond pattern
+    // Center guest floats independently on top — no cell is reserved
 
     const halfSize = Math.ceil(Math.sqrt(count)) + 2
     const cells: { col: number; row: number; distSq: number }[] = []
 
     for (let row = -halfSize; row <= halfSize; row++) {
       for (let col = -halfSize; col <= halfSize; col++) {
-        if (col === 0 && row === 0) continue // skip center (reserved for center guest)
         const distSq = col * col + row * row
         cells.push({ col, row, distSq })
       }
