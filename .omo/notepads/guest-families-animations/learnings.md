@@ -95,6 +95,21 @@
 - API call flow, decline note modal, text strings unchanged (formality text from Task 6 untouched)
 - `npx tsc --noEmit` passes with zero errors
 
+## 2026-06-13 — Fix 400 Bad Request on RSVP (JsonStringEnumConverter)
+
+- **Root cause**: Frontend sends RSVP status as JSON string (`"Attending"`), but ASP.NET Core's System.Text.Json by default deserializes enums as integers (0, 1, 2), causing 400 Bad Request
+- **Fix**: In `Program.cs:99`, changed `services.AddControllers()` to:
+  ```csharp
+  services.AddControllers()
+      .AddJsonOptions(opt =>
+          opt.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+  ```
+- This registers `JsonStringEnumConverter` globally, allowing the backend to accept both string and numeric enum values from JSON
+- `RsvpStatus` enum: `Pending = 0, Attending = 1, NotAttending = 2`
+- No frontend changes needed — frontend already sends `{"status":"Attending"}` which now works
+- `dotnet build` passes with 0 errors
+- Key pattern: for any backend enum exposed via JSON API, either use `[JsonConverter(typeof(JsonStringEnumConverter))]` on individual properties or register globally via `AddJsonOptions`
+
 ## 2026-06-13 19:23 - RSVP bar always visible
 - Removed conditional `{page.currentGuest.rsvpStatus === 'Pending' && (...)}` wrapper around `<InviteRsvpBar>` in InviteClientPage.tsx
 - RSVP bar now renders unconditionally so guests can change their RSVP at any time
