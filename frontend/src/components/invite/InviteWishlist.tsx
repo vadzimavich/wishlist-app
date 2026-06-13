@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Gift, ExternalLink, Sparkles, X, Check, UserPlus } from 'lucide-react'
+import { Gift, ExternalLink, X, Check, UserPlus } from 'lucide-react'
 import { giftsApi } from '@/lib/api'
 import { WishlistItem, ClaimType } from '@/types'
 import { formatPrice } from '@/lib/utils'
@@ -109,12 +109,8 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
   return (
     <section ref={sectionRef} className="relative z-10 px-4 py-8 max-w-2xl mx-auto">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass mb-4">
-          <Sparkles size={14} className="text-brand-champagne" />
-          <span className="text-brand-pearl/60 text-sm">Вишлист</span>
-        </div>
-        <h2 className="font-display font-bold text-3xl md:text-4xl text-brand-pearl">
-          Выбери подарок
+        <h2 className="font-display font-bold text-3xl md:text-4xl gradient-text-sweep">
+          Вишлист
         </h2>
         <p className="text-brand-pearl/40 text-sm mt-2">
           Нажми на товар, чтобы выбрать или открыть групповой сбор

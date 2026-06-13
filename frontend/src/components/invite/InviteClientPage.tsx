@@ -121,6 +121,7 @@ export function InviteClientPage({ initialData, token }: Props) {
         coverImageUrl={page.coverImageUrl}
         hostName={page.hostName}
         guestName={page.currentGuest.name}
+        guestCount={page.currentGuest.guestCount}
         rsvpStatus={page.currentGuest.rsvpStatus}
       />
 
@@ -134,7 +135,7 @@ export function InviteClientPage({ initialData, token }: Props) {
       <InviteMap location={page.eventLocation} latitude={page.eventLatitude} longitude={page.eventLongitude} />
 
       {/* Guests */}
-      <InviteGuests guests={guests} currentGuestId={page.currentGuest.id} />
+      <InviteGuests guests={guests} currentGuestId={page.currentGuest.id} currentGuestCount={page.currentGuest.guestCount} />
 
       {/* Wishlist */}
       <InviteWishlist

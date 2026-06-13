@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { Plus, Trash2, Pencil, Calendar, Users, X, Copy, Check, Eye, MapPin } from 'lucide-react'
 import { eventsApi, guestsApi } from '@/lib/api'
-import { Event, CreateEventForm, CreateGuestForm, Guest } from '@/types'
+import { Event, CreateEventForm, CreateGuestForm, UpdateGuestForm, Guest } from '@/types'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
@@ -38,6 +38,10 @@ export default function EventsPage() {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [eventForm, setEventForm] = useState<CreateEventForm>(EMPTY_EVENT)
   const [guestForm, setGuestForm] = useState<CreateGuestForm>(EMPTY_GUEST)
+  const [editingGuest, setEditingGuest] = useState<{ guest: Guest; eventId: string } | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editEmoji, setEditEmoji] = useState('')
+  const [editGuestCount, setEditGuestCount] = useState(1)
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ['events'],
@@ -72,6 +76,13 @@ export default function EventsPage() {
     mutationFn: ({ eventId, guestId }: { eventId: string; guestId: string }) =>
       guestsApi.deleteGuest(eventId, guestId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['events'] }); toast.success('Гость удалён') },
+  })
+
+  const updateGuest = useMutation({
+    mutationFn: ({ eventId, guestId, form }: { eventId: string; guestId: string; form: UpdateGuestForm }) =>
+      guestsApi.updateGuest(eventId, guestId, form),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['events'] }); toast.success('Сохранено'); setEditingGuest(null) },
+    onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Ошибка'),
   })
 
   const openCreateEvent = () => { setEventForm(EMPTY_EVENT); setEditingEvent(null); setEventModal('create') }
@@ -356,50 +367,114 @@ export default function EventsPage() {
                 <p className="text-xs font-medium text-admin-muted uppercase tracking-wide mb-3">
                   Список гостей ({currentGuestEvent?.guests.length ?? 0})
                 </p>
-                {(currentGuestEvent?.guests ?? []).map((guest) => (
-                  <div key={guest.id}
-                    className="flex items-center gap-3 py-3 border-b border-admin-border last:border-0">
-                    <div className="w-8 h-8 rounded-full bg-brand-purple/20 flex items-center justify-center text-base">
-                      {guest.emoji || '🙂'}
+                {(currentGuestEvent?.guests ?? []).map((guest) =>
+                  editingGuest?.guest.id === guest.id ? (
+                    /* ── Inline Edit Form ── */
+                    <div key={guest.id} className="flex flex-col gap-2 py-3 border-b border-admin-border last:border-0">
+                      {/* Emoji picker */}
+                      <div>
+                        <label className="block text-xs text-admin-muted mb-1">Аватар</label>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {['🙂','😎','🥳','🎉','💝','🎀','🌸','✨','🦄','🐱','🐶','🌟'].map(e => (
+                            <button key={e} type="button" onClick={() => setEditEmoji(e)}
+                              className={`w-7 h-7 rounded-lg text-base flex items-center justify-center transition-all
+                                ${editEmoji === e
+                                  ? 'bg-brand-purple/20 border border-brand-violet/40 scale-110'
+                                  : 'bg-admin-elevated border border-admin-border hover:border-admin-muted'
+                                }`}>
+                              {e}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Name */}
+                      <input className="admin-input text-sm" placeholder="Имя *" value={editName}
+                        onChange={e => setEditName(e.target.value)} required />
+                      {/* Guest count */}
+                      <div>
+                        <label className="block text-xs text-admin-muted mb-1">Количество гостей</label>
+                        <input type="number" className="admin-input text-sm" min={1} value={editGuestCount}
+                          onChange={e => setEditGuestCount(parseInt(e.target.value) || 1)} />
+                      </div>
+                      {/* Actions */}
+                      <div className="flex gap-2 mt-1">
+                        <button type="button" onClick={() => setEditingGuest(null)}
+                          className="flex-1 py-1.5 rounded-lg border border-admin-border text-admin-muted
+                                     hover:text-admin-text text-xs transition-all">
+                          Отмена
+                        </button>
+                        <button type="button"
+                          onClick={() => updateGuest.mutate({
+                            eventId: guestModal.id,
+                            guestId: guest.id,
+                            form: { name: editName, emoji: editEmoji, guestCount: editGuestCount }
+                          })}
+                          disabled={updateGuest.isPending || !editName.trim()}
+                          className="flex-1 py-1.5 rounded-lg bg-brand-purple hover:bg-brand-violet text-white
+                                     text-xs font-medium transition-all disabled:opacity-50">
+                          {updateGuest.isPending ? '...' : 'Сохранить'}
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-admin-text truncate">{guest.name}</p>
-                      <p className={`text-xs ${RSVP_LABELS[guest.rsvpStatus]?.color ?? 'text-admin-muted'}`}>
-                        {RSVP_LABELS[guest.rsvpStatus]?.label ?? guest.rsvpStatus}
-                      </p>
+                  ) : (
+                    <div key={guest.id}
+                      className="flex items-center gap-3 py-3 border-b border-admin-border last:border-0">
+                      <div className="w-8 h-8 rounded-full bg-brand-purple/20 flex items-center justify-center text-base">
+                        {guest.emoji || '🙂'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-admin-text truncate">{guest.name}</p>
+                        <p className={`text-xs ${RSVP_LABELS[guest.rsvpStatus]?.color ?? 'text-admin-muted'}`}>
+                          {RSVP_LABELS[guest.rsvpStatus]?.label ?? guest.rsvpStatus}
+                        </p>
+                      </div>
+
+                      {/* Edit button */}
+                      <button
+                        onClick={() => {
+                          setEditingGuest({ guest, eventId: guestModal.id })
+                          setEditName(guest.name)
+                          setEditEmoji(guest.emoji || '🙂')
+                          setEditGuestCount(guest.guestCount || 1)
+                        }}
+                        title="Редактировать"
+                        className="p-1.5 rounded-lg text-admin-muted hover:text-brand-violet hover:bg-brand-purple/10 transition-all"
+                      >
+                        <Pencil size={14} />
+                      </button>
+
+                      {/* Copy invite link */}
+                      <button
+                        onClick={() => copy(
+                          `${window.location.origin}/invite/${guest.token}`,
+                          guest.id
+                        )}
+                        title="Скопировать ссылку"
+                        className="p-1.5 rounded-lg text-admin-muted hover:text-brand-violet hover:bg-brand-purple/10 transition-all"
+                      >
+                        {copied === guest.id ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+                      </button>
+
+                      {/* Preview invite */}
+                      <a
+                        href={`/invite/${guest.token}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Просмотреть как гость"
+                        className="p-1.5 rounded-lg text-admin-muted hover:text-brand-violet hover:bg-brand-purple/10 transition-all"
+                      >
+                        <Eye size={14} />
+                      </a>
+
+                      <button
+                        onClick={() => deleteGuest.mutate({ eventId: guestModal.id, guestId: guest.id })}
+                        className="p-1.5 rounded-lg text-admin-muted hover:text-danger hover:bg-danger/10 transition-all"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
-
-                    {/* Copy invite link */}
-                    <button
-                      onClick={() => copy(
-                        `${window.location.origin}/invite/${guest.token}`,
-                        guest.id
-                      )}
-                      title="Скопировать ссылку"
-                      className="p-1.5 rounded-lg text-admin-muted hover:text-brand-violet hover:bg-brand-purple/10 transition-all"
-                    >
-                      {copied === guest.id ? <Check size={14} className="text-success" /> : <Copy size={14} />}
-                    </button>
-
-                    {/* Preview invite */}
-                    <a
-                      href={`/invite/${guest.token}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="Просмотреть как гость"
-                      className="p-1.5 rounded-lg text-admin-muted hover:text-brand-violet hover:bg-brand-purple/10 transition-all"
-                    >
-                      <Eye size={14} />
-                    </a>
-
-                    <button
-                      onClick={() => deleteGuest.mutate({ eventId: guestModal.id, guestId: guest.id })}
-                      className="p-1.5 rounded-lg text-admin-muted hover:text-danger hover:bg-danger/10 transition-all"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             </motion.div>
           </>

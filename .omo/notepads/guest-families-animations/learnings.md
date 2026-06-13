@@ -26,3 +26,53 @@
 - **Migration**: `20260613160151_AddGuestCount.cs` — `ADD COLUMN "GuestCount" integer NOT NULL DEFAULT 1`
 - **Build**: `dotnet build` passed 0 errors after clearing stale process lock
 - **Pattern note**: `UpdateGuestRequest` follows the same optional-field pattern as `UpdateEventRequest` — optional Emoji uses `null` = don't change, optional `GuestCount` uses `null` = don't change, but Name is required (always updated)
+
+## 2026-06-13 — Task 6: Add formal/informal text logic based on guestCount
+
+- Created `getFormality(guestCount: number)` pattern across invite components using inline `guestCount > 1` ternary expressions
+- **InviteHero.tsx**: Added `guestCount: number` prop; changed `приглашает тебя` → `приглашает {guestCount > 1 ? 'вас' : 'тебя'}`; changed `Привет, {guestName}!` → `{guestCount > 1 ? 'Здравствуйте' : 'Привет'}, {guestName}!`
+- **InviteGuests.tsx**: Added `currentGuestCount: number` prop; changed `(ты)` → `{currentGuestCount > 1 ? '(вы)' : '(ты)'}`
+- **InviteRsvpBar.tsx**: Added `isFormal = guest.guestCount > 1` constant; changed `Ты придёшь?` → conditional; updated both toast messages (success and decline) with formal/informal variants
+- **InviteClientPage.tsx**: Passes `guestCount={page.currentGuest.guestCount}` to InviteHero and `currentGuestCount={page.currentGuest.guestCount}` to InviteGuests
+- `npx tsc --noEmit` passes with zero errors
+- Key pattern: simple `guestCount > 1` check is sufficient for formality logic (guestCount=1 → informal singular, guestCount>1 → formal plural)
+
+## 2026-06-13 — Tasks 7 & 8: Remove wishlist badge + heading change + sweep animation
+
+### Changes
+- **InviteWishlist.tsx**: Removed `Sparkles` import from lucide-react; removed glass pill badge (Sparkles icon + "Вишлист" text); changed h2 from "Выбери подарок" to "Вишлист"; added `gradient-text-sweep` class
+- **InviteGuests.tsx**: Changed both h2 elements from `gradient-text` to `gradient-text-sweep` (empty state + main heading)
+- **globals.css**: Added `@keyframes gradient-sweep` (background-position 0%→100%→0% over 6s); added `.gradient-text-sweep` class with 300% background-size; added reduced-motion override
+
+### Preserved
+- `gradient-text` class untouched (hero h1 still uses it)
+- `gradient-text-gold` class untouched (prices still use it)
+- Card layout, modal, item listing in InviteWishlist unchanged
+
+### Notes
+- `gradient-text-sweep` uses a richer 5-stop gradient vs the 3-stop `gradient-text`
+- Pre-existing TS errors in `InviteClientPage.tsx` (missing `guestCount`/`currentGuestCount` props) — unrelated
+
+## 2026-06-13 — Task 5: Add edit guest form in events admin side panel
+
+### Changes
+- Added `editingGuest` state: `{ guest: Guest; eventId: string } | null` to track which guest is being edited
+- Added `editName`, `editEmoji`, `editGuestCount` local state fields for the edit form values
+- Added `UpdateGuestForm` to the types import
+- Added `updateGuest` useMutation calling `guestsApi.updateGuest(eventId, guestId, form)`
+  - On success: invalidates `['events']` query, toast "Сохранено", closes edit mode
+  - On error: toast error message
+- Added **edit button (Pencil icon)** between RSVP status label and Copy button in each guest row
+- When editing, the guest row is replaced with an **inline edit form** containing:
+  - Emoji picker (same 12 emojis as the add guest form)
+  - Name input with `required` attribute
+  - Number input for guestCount with `min=1`
+  - Save button (disabled when name empty or mutation pending)
+  - Cancel button (restores original values, closes edit mode)
+- Cancel sets `editingGuest` to null without any API call
+
+### Key patterns
+- Ternary inside `.map()` to conditionally render edit form vs normal row based on `editingGuest?.guest.id === guest.id`
+- Edit form state initialized on button click via `setEditName(guest.name)` / `setEditEmoji(guest.emoji || '🙂')` / `setEditGuestCount(guest.guestCount || 1)`
+- `Pencil` icon was already imported in the file (used for event editing), no additional import needed
+- `npx tsc --noEmit` passes with zero errors

@@ -13,6 +13,7 @@ interface Props {
   coverImageUrl: string | null
   hostName: string
   guestName: string
+  guestCount: number
   rsvpStatus: RsvpStatus
 }
 
@@ -37,7 +38,7 @@ const item = {
 
 export function InviteHero({
   eventTitle, eventDate, eventLocation, coverImageUrl,
-  hostName, guestName, rsvpStatus,
+  hostName, guestName, guestCount, rsvpStatus,
 }: Props) {
   const heroRef = useRef<HTMLDivElement>(null)
   const coverRef = useRef<HTMLDivElement>(null)
@@ -205,7 +206,7 @@ export function InviteHero({
         <motion.div variants={item} className="mb-6">
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm text-brand-pearl/70">
             <span className="w-1.5 h-1.5 rounded-full bg-brand-violet animate-pulse-slow" />
-            {hostName} приглашает тебя
+            {hostName} приглашает {guestCount > 1 ? 'вас' : 'тебя'}
           </span>
         </motion.div>
 
@@ -214,7 +215,7 @@ export function InviteHero({
           variants={item}
           className="text-brand-champagne/80 text-lg md:text-xl mb-3 font-body"
         >
-          Привет, {guestName}!
+          {guestCount > 1 ? 'Здравствуйте' : 'Привет'}, {guestName}!
         </motion.p>
 
         {/* Event title — главный заголовок */}

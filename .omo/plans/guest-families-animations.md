@@ -378,7 +378,7 @@ Max Concurrent: 4 (Wave 2)
   - Files: `types/index.ts`, `lib/api.ts`
   - Pre-commit: `npx tsc --noEmit`
 
-- [ ] 5. Admin — Add edit guest form in events side panel
+- [x] 5. Admin — Add edit guest form in events side panel
 
   **What to do**:
   - In `events/page.tsx`: Add edit button (Pencil icon) next to each guest in the guest management side panel (between RSVP status and Copy button)
@@ -451,7 +451,7 @@ Max Concurrent: 4 (Wave 2)
   - Message: `feat(admin): add guest edit form in events side panel`
   - Files: `events/page.tsx`
 
-- [ ] 6. Invite page — Formal/informal text logic in all components
+- [x] 6. Invite page — Formal/informal text logic in all components
 
   **What to do**:
   - Create utility: `getFormality(guestCount: number)` that returns:
@@ -526,7 +526,7 @@ Max Concurrent: 4 (Wave 2)
   - Message: `feat(invite): add formal/informal text based on guestCount`
   - Files: `InviteHero.tsx`, `InviteGuests.tsx`, `InviteRsvpBar.tsx`, `InviteClientPage.tsx`
 
-- [ ] 7. Invite page — Remove wishlist badge, change heading to gradient-text
+- [x] 7. Invite page — Remove wishlist badge, change heading to gradient-text
 
   **What to do**:
   - In `InviteWishlist.tsx`: Remove entire glass pill badge (lines 112-115):
@@ -583,7 +583,7 @@ Max Concurrent: 4 (Wave 2)
   - Message: `feat(invite): replace wishlist badge with gradient heading`
   - Files: `InviteWishlist.tsx`
 
-- [ ] 8. Invite page — Sweep animation on gradient-text headers
+- [x] 8. Invite page — Sweep animation on gradient-text headers
 
   **What to do**:
   - Add CSS to `globals.css`:

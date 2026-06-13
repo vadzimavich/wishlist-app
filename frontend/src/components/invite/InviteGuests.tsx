@@ -8,6 +8,7 @@ import { GuestPublic } from '@/types'
 interface Props {
   guests: GuestPublic[]
   currentGuestId: string
+  currentGuestCount: number
 }
 
 const MARGIN = 50
@@ -23,7 +24,7 @@ const nodeVariants = {
   visible: { scale: 1, opacity: 1, transition: { type: 'spring', damping: 14, stiffness: 220 } },
 }
 
-export function InviteGuests({ guests, currentGuestId }: Props) {
+export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Props) {
   const graphRef = useRef<HTMLDivElement>(null)
   const [springParams, setSpringParams] = useState({ tension: 170, friction: 26, mass: 1, minDistance: 110 })
   const [initialized, setInitialized] = useState(false)
@@ -222,7 +223,7 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
     return (
       <section className="relative z-10 overflow-hidden py-16">
         <div className="text-center px-4">
-          <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight gradient-text">Гости</h2>
+          <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight gradient-text-sweep">Гости</h2>
           <p className="text-brand-pearl/30 text-sm mt-3">
             {guests.length === 0 ? 'Пока нет приглашённых' : 'Никто не подтвердил'}
           </p>
@@ -236,7 +237,7 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
       <div className="text-center px-4 mb-6 sm:mb-8">
         <motion.h2 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }} transition={{ duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
-          className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl leading-tight tracking-tight gradient-text">
+          className="font-display font-extrabold text-3xl sm:text-4xl md:text-5xl leading-tight tracking-tight gradient-text-sweep">
           Гости
         </motion.h2>
         <motion.p initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }}
@@ -310,7 +311,7 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
                         <span className="text-2xl sm:text-3xl leading-none select-none">{centerGuest.emoji || '🙂'}</span>
                       </div>
                       <span className="text-sm sm:text-base font-semibold text-center leading-tight text-brand-pearl">
-                        {centerGuest.name}<span className="text-brand-violet ml-1 text-[10px] font-normal">(ты)</span>
+                        {centerGuest.name}<span className="text-brand-violet ml-1 text-[10px] font-normal">{currentGuestCount > 1 ? '(вы)' : '(ты)'}</span>
                       </span>
                     </div>
                   </animated.div>

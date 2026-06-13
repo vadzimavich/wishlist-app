@@ -17,6 +17,7 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
   const [note, setNote] = useState('')
   const [expanded, setExpanded] = useState(false)
   const [pendingStatus, setPendingStatus] = useState<RsvpStatus | null>(null)
+  const isFormal = guest.guestCount > 1
 
   const rsvpMutation = useMutation({
     mutationFn: (status: RsvpStatus) =>
@@ -25,8 +26,8 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
       qc.invalidateQueries({ queryKey: ['invite', guest.token] })
       toast.success(
         pendingStatus === 'Attending'
-          ? 'Отлично, ждём тебя! 🎉'
-          : 'Понял, жаль что не придёшь 😔'
+          ? (isFormal ? 'Отлично, ждём вас! 🎉' : 'Отлично, ждём тебя! 🎉')
+          : (isFormal ? 'Жаль, что не придёте 😔' : 'Понял, жаль что не придёшь 😔')
       )
     },
     onError: () => toast.error('Не удалось сохранить ответ'),
@@ -58,7 +59,7 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
         <div className="liquid-glass px-5 py-3 flex items-center gap-4 pointer-events-auto
                         shadow-2xl max-w-sm w-full">
           <p className="text-brand-pearl/80 text-sm font-medium flex-1">
-            Ты придёшь?
+            {isFormal ? 'Вы придёте?' : 'Ты придёшь?'}
           </p>
           <div className="flex items-center gap-2">
             <button
