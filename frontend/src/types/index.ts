@@ -28,12 +28,14 @@ export interface AuthResponse {
 export interface GuestPublic {
   id: string
   name: string
+  emoji: string
   rsvpStatus: RsvpStatus
 }
 
 export interface CollectiveParticipant {
   id: string
   name: string
+  emoji: string
   rsvpStatus: RsvpStatus
 }
 
@@ -50,10 +52,10 @@ export interface WishlistItem {
   id: string
   name: string
   price: number | null
+  currency: string
   photoUrl: string | null
   sourceUrl: string | null
   description: string | null
-  priority: number
   status: WishlistItemStatus
   activeClaim: GiftClaim | null
   createdAt: string
@@ -64,8 +66,7 @@ export interface WishlistItem {
 export interface Guest {
   id: string
   name: string
-  phone: string | null
-  email: string | null
+  emoji: string
   token: string
   rsvpStatus: RsvpStatus
   rsvpNote: string | null
@@ -89,6 +90,7 @@ export interface Event {
 export interface GuestSelf {
   id: string
   name: string
+  emoji: string
   token: string
   rsvpStatus: RsvpStatus
   rsvpNote: string | null
@@ -133,10 +135,10 @@ export interface ParsedProduct {
 export interface CreateWishlistItemForm {
   name: string
   price: string
+  currency: string
   photoUrl: string
   sourceUrl: string
   description: string
-  priority: number
 }
 
 export interface CreateEventForm {
@@ -149,6 +151,5 @@ export interface CreateEventForm {
 
 export interface CreateGuestForm {
   name: string
-  phone: string
-  email: string
+  emoji: string
 }

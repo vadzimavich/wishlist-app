@@ -26,8 +26,7 @@ public class WishlistService(AppDbContext db) : IWishlistService
             .Include(wi => wi.ActiveClaim)
                 .ThenInclude(c => c!.Participants)
                     .ThenInclude(p => p.Guest)
-            .OrderByDescending(wi => wi.Priority)
-            .ThenByDescending(wi => wi.CreatedAt)
+            .OrderByDescending(wi => wi.CreatedAt)
             .ToListAsync();
 
         return items.Select(MapToDto).ToList();
@@ -40,10 +39,10 @@ public class WishlistService(AppDbContext db) : IWishlistService
             UserId = userId,
             Name = request.Name.Trim(),
             Price = request.Price,
+            Currency = request.Currency?.Trim() ?? "RUB",
             PhotoUrl = request.PhotoUrl,
             SourceUrl = request.SourceUrl,
             Description = request.Description?.Trim(),
-            Priority = request.Priority
         };
 
         db.WishlistItems.Add(item);
@@ -61,10 +60,10 @@ public class WishlistService(AppDbContext db) : IWishlistService
 
         if (request.Name is not null) item.Name = request.Name.Trim();
         if (request.Price.HasValue) item.Price = request.Price;
+        if (request.Currency is not null) item.Currency = request.Currency.Trim();
         if (request.PhotoUrl is not null) item.PhotoUrl = request.PhotoUrl;
         if (request.SourceUrl is not null) item.SourceUrl = request.SourceUrl;
         if (request.Description is not null) item.Description = request.Description.Trim();
-        if (request.Priority.HasValue) item.Priority = request.Priority.Value;
         item.UpdatedAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();
@@ -77,23 +76,23 @@ public class WishlistService(AppDbContext db) : IWishlistService
             .FirstOrDefaultAsync(wi => wi.Id == itemId && wi.UserId == userId)
             ?? throw new KeyNotFoundException("Товар не найден.");
 
-        item.IsDeleted = true; // Soft delete
+        item.IsDeleted = true;
         item.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync();
     }
 
     public static WishlistItemDto MapToDto(WishlistItem item) => new(
-        item.Id, item.Name, item.Price, item.PhotoUrl, item.SourceUrl,
-        item.Description, item.Priority, item.Status,
+        item.Id, item.Name, item.Price, item.Currency, item.PhotoUrl, item.SourceUrl,
+        item.Description, item.Status,
         item.ActiveClaim is { IsActive: true } claim ? MapClaimToDto(claim) : null,
         item.CreatedAt
     );
 
     private static GiftClaimDto MapClaimToDto(GiftClaim claim) => new(
         claim.Id, claim.WishlistItemId,
-        new GuestPublicDto(claim.Guest.Id, claim.Guest.Name, claim.Guest.RsvpStatus),
+        new GuestPublicDto(claim.Guest.Id, claim.Guest.Name, claim.Guest.Emoji, claim.Guest.RsvpStatus),
         claim.Type,
-        claim.Participants.Select(p => new GuestPublicDto(p.Guest.Id, p.Guest.Name, p.Guest.RsvpStatus)).ToList(),
+        claim.Participants.Select(p => new GuestPublicDto(p.Guest.Id, p.Guest.Name, p.Guest.Emoji, p.Guest.RsvpStatus)).ToList(),
         claim.CreatedAt
     );
 }
@@ -180,7 +179,7 @@ public class EventService(AppDbContext db) : IEventService
         ev.Id, ev.Title, ev.Date, ev.Location, ev.Description, ev.CoverImageUrl,
         ev.IsActive,
         ev.Guests.Select(g => new GuestDto(
-            g.Id, g.Name, g.Phone, g.Email, g.Token, g.RsvpStatus, g.RsvpNote,
+            g.Id, g.Name, g.Emoji, g.Token, g.RsvpStatus, g.RsvpNote,
             $"/invite/{g.Token}"
         )).ToList(),
         ev.CreatedAt
@@ -208,15 +207,14 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
         {
             EventId = eventId,
             Name = request.Name.Trim(),
-            Phone = request.Phone?.Trim(),
-            Email = request.Email?.Trim().ToLower()
+            Emoji = string.IsNullOrWhiteSpace(request.Emoji) ? "🙂" : request.Emoji.Trim()
         };
 
         db.Guests.Add(guest);
         await db.SaveChangesAsync();
 
         var baseUrl = config["App:BaseUrl"] ?? "http://localhost:3000";
-        return new GuestDto(guest.Id, guest.Name, guest.Phone, guest.Email,
+        return new GuestDto(guest.Id, guest.Name, guest.Emoji,
             guest.Token, guest.RsvpStatus, guest.RsvpNote, $"{baseUrl}/invite/{guest.Token}");
     }
 
@@ -249,7 +247,7 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
             .Include(wi => wi.ActiveClaim)
                 .ThenInclude(c => c!.Participants)
                     .ThenInclude(p => p.Guest)
-            .OrderByDescending(wi => wi.Priority)
+            .OrderByDescending(wi => wi.CreatedAt)
             .ToListAsync();
 
         var baseUrl = config["App:BaseUrl"] ?? "http://localhost:3000";
@@ -263,10 +261,10 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
             HostName: guest.Event.User.Name,
             HostAvatarUrl: guest.Event.User.AvatarUrl,
             Guests: guest.Event.Guests
-                .Select(g => new GuestPublicDto(g.Id, g.Name, g.RsvpStatus))
+                .Select(g => new GuestPublicDto(g.Id, g.Name, g.Emoji, g.RsvpStatus))
                 .ToList(),
             WishlistItems: wishlistItems.Select(WishlistService.MapToDto).ToList(),
-            CurrentGuest: new GuestSelfDto(guest.Id, guest.Name, guest.Token, guest.RsvpStatus, guest.RsvpNote)
+            CurrentGuest: new GuestSelfDto(guest.Id, guest.Name, guest.Emoji, guest.Token, guest.RsvpStatus, guest.RsvpNote)
         );
     }
 
@@ -281,7 +279,7 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
         await db.SaveChangesAsync();
 
         var baseUrl = config["App:BaseUrl"] ?? "http://localhost:3000";
-        return new GuestDto(guest.Id, guest.Name, guest.Phone, guest.Email,
+        return new GuestDto(guest.Id, guest.Name, guest.Emoji,
             guest.Token, guest.RsvpStatus, guest.RsvpNote, $"{baseUrl}/invite/{guest.Token}");
     }
 }

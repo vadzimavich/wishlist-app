@@ -21,61 +21,59 @@ export function InviteMap({ location }: Props) {
       return
     }
 
-    // Load Yandex Maps script
     const script = document.createElement('script')
     script.src = `https://api-maps.yandex.ru/2.1/?apikey=${apiKey}&lang=ru_RU`
     script.async = true
     script.onload = () => {
-      if (window.ymaps) {
-        window.ymaps.ready(() => {
+      const checkReady = () => {
+        if (window.ymaps?.Map) {
           initMap()
-        })
+        } else {
+          setTimeout(checkReady, 100)
+        }
       }
+      checkReady()
     }
     script.onerror = () => setMapError(true)
     document.head.appendChild(script)
 
     return () => {
-      // Cleanup script on unmount
       const existingScript = document.querySelector(`script[src*="api-maps.yandex.ru"]`)
-      if (existingScript) {
-        existingScript.remove()
-      }
+      if (existingScript) existingScript.remove()
     }
   }, [location])
 
   const initMap = () => {
-    if (!mapRef.current || !window.ymaps) return
+    if (!mapRef.current || !window.ymaps?.Map) return
 
-    const map = new window.ymaps.Map(mapRef.current, {
-      center: [55.751574, 37.573856], // Default Moscow center
-      zoom: 13,
-      controls: ['zoomControl', 'fullscreenControl'],
-    })
+    try {
+      const map = new window.ymaps.Map(mapRef.current, {
+        center: [55.751574, 37.573856],
+        zoom: 13,
+        controls: ['zoomControl', 'fullscreenControl'],
+      })
 
-    // Geocode the location string
-    window.ymaps.geocode(location).then((res: any) => {
-      const firstGeoObject = res.geoObjects.get(0)
-      if (firstGeoObject) {
-        const coords = firstGeoObject.geometry.getCoordinates()
-        map.setCenter(coords, 15)
-
-        const placemark = new window.ymaps.Placemark(coords, {
-          balloonContent: location,
-        }, {
-          preset: 'islands#violetDotIcon',
-          iconColor: '#8b5cf6',
-        })
-
-        map.geoObjects.add(placemark)
-        setMapLoaded(true)
-      }
-    }).catch(() => {
+      window.ymaps.geocode(location!).then((res: any) => {
+        const firstGeoObject = res.geoObjects.get(0)
+        if (firstGeoObject) {
+          const coords = firstGeoObject.geometry.getCoordinates()
+          map.setCenter(coords, 15)
+          const placemark = new window.ymaps.Placemark(coords, {
+            balloonContent: location,
+          }, {
+            preset: 'islands#violetDotIcon',
+            iconColor: '#8b5cf6',
+          })
+          map.geoObjects.add(placemark)
+          setMapLoaded(true)
+        }
+      }).catch(() => setMapError(true))
+    } catch {
       setMapError(true)
-    })
+    }
   }
 
-  if (!location || mapError) return null
+  if (!location) return null
 
   return (
     <section className="relative z-10 px-4 py-8 max-w-2xl mx-auto">
@@ -90,18 +88,30 @@ export function InviteMap({ location }: Props) {
             <p className="text-brand-pearl font-medium text-sm">{location}</p>
           </div>
         </div>
-        
-        <div 
-          ref={mapRef} 
-          className="w-full h-[300px] rounded-xl bg-brand-deep/50"
-          style={{ opacity: mapLoaded ? 1 : 0.5 }}
-        />
+
+        {mapError ? (
+          <a
+            href={`https://yandex.ru/maps/?text=${encodeURIComponent(location)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full h-[200px] rounded-xl bg-brand-deep/50 flex items-center justify-center
+                       text-brand-pearl/40 text-sm hover:text-brand-pearl/60 transition-colors"
+          >
+            <MapPin size={20} className="mr-2" />
+            Открыть на карте
+          </a>
+        ) : (
+          <div
+            ref={mapRef}
+            className="w-full h-[300px] rounded-xl bg-brand-deep/50"
+            style={{ opacity: mapLoaded ? 1 : 0.5 }}
+          />
+        )}
       </div>
     </section>
   )
 }
 
-// Extend Window type for ymaps
 declare global {
   interface Window {
     ymaps: any

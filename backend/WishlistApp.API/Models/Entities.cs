@@ -49,13 +49,13 @@ public class WishlistItem
 
     public string Name { get; set; } = string.Empty;
     public decimal? Price { get; set; }
+    public string Currency { get; set; } = "RUB";
     public string? PhotoUrl { get; set; }
-    public string? SourceUrl { get; set; }   // Ссылка на товар на маркетплейсе
+    public string? SourceUrl { get; set; }
     public string? Description { get; set; }
-    public int Priority { get; set; } = 0;    // Для сортировки (выше = важнее)
 
     public WishlistItemStatus Status { get; set; } = WishlistItemStatus.Available;
-    public bool IsDeleted { get; set; }       // Soft delete
+    public bool IsDeleted { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
@@ -99,8 +99,7 @@ public class Guest
     public Guid EventId { get; set; }
 
     public string Name { get; set; } = string.Empty;
-    public string? Phone { get; set; }
-    public string? Email { get; set; }
+    public string Emoji { get; set; } = "🙂";
     public string Token { get; set; } = Guid.NewGuid().ToString("N"); // Уникальный токен для ссылки
     public RsvpStatus RsvpStatus { get; set; } = RsvpStatus.Pending;
     public string? RsvpNote { get; set; }

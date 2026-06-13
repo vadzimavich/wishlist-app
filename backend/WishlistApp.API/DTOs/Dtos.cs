@@ -43,10 +43,10 @@ public record WishlistItemDto(
     Guid Id,
     string Name,
     decimal? Price,
+    string Currency,
     string? PhotoUrl,
     string? SourceUrl,
     string? Description,
-    int Priority,
     WishlistItemStatus Status,
     GiftClaimDto? ActiveClaim,
     DateTime CreatedAt
@@ -55,19 +55,19 @@ public record WishlistItemDto(
 public record CreateWishlistItemRequest(
     [Required, MaxLength(200)] string Name,
     decimal? Price,
+    string? Currency,
     string? PhotoUrl,
     string? SourceUrl,
-    [MaxLength(1000)] string? Description,
-    int Priority = 0
+    [MaxLength(1000)] string? Description
 );
 
 public record UpdateWishlistItemRequest(
     [MaxLength(200)] string? Name,
     decimal? Price,
+    string? Currency,
     string? PhotoUrl,
     string? SourceUrl,
-    [MaxLength(1000)] string? Description,
-    int? Priority
+    [MaxLength(1000)] string? Description
 );
 
 // ─── Event ────────────────────────────────────────────────────────────────────
@@ -106,8 +106,7 @@ public record UpdateEventRequest(
 public record GuestDto(
     Guid Id,
     string Name,
-    string? Phone,
-    string? Email,
+    string Emoji,
     string Token,
     RsvpStatus RsvpStatus,
     string? RsvpNote,
@@ -116,8 +115,7 @@ public record GuestDto(
 
 public record CreateGuestRequest(
     [Required, MaxLength(100)] string Name,
-    [Phone] string? Phone,
-    [EmailAddress] string? Email
+    [MaxLength(10)] string Emoji = "🙂"
 );
 
 public record RsvpRequest(
@@ -144,12 +142,14 @@ public record InvitePageDto(
 public record GuestPublicDto(
     Guid Id,
     string Name,
+    string Emoji,
     RsvpStatus RsvpStatus
 );
 
 public record GuestSelfDto(
     Guid Id,
     string Name,
+    string Emoji,
     string Token,
     RsvpStatus RsvpStatus,
     string? RsvpNote

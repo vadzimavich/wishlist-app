@@ -8,11 +8,13 @@ interface Props {
   currentGuestId: string
 }
 
-const RSVP_CONFIG = {
+const RSVP_CONFIG: Record<string, { color: string; dot: string; label: string }> = {
   Pending:      { color: 'bg-admin-muted/20',  dot: 'bg-admin-muted', label: 'Ожидает'   },
   Attending:    { color: 'bg-success/10',       dot: 'bg-success',     label: 'Придёт'    },
   NotAttending: { color: 'bg-danger/10',        dot: 'bg-danger',      label: 'Не придёт' },
 }
+
+const DEFAULT_CFG = { color: 'bg-admin-muted/20', dot: 'bg-admin-muted', label: '' }
 
 export function InviteGuests({ guests, currentGuestId }: Props) {
   const sectionRef = useRef<HTMLDivElement>(null)
@@ -73,7 +75,7 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
                                flex items-center justify-center text-[10px] font-bold text-white"
                     style={{ zIndex: 4 - i }}
                   >
-                    {g.name.charAt(0).toUpperCase()}
+                    {g.emoji || g.name.charAt(0).toUpperCase()}
                   </div>
                 ))}
               {attending > 4 && (
@@ -93,7 +95,7 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
         {/* Guest chips */}
         <div className="flex flex-wrap gap-2">
           {guests.map(guest => {
-            const cfg = RSVP_CONFIG[guest.rsvpStatus]
+            const cfg = RSVP_CONFIG[guest.rsvpStatus] ?? DEFAULT_CFG
             const isMe = guest.id === currentGuestId
 
             return (
@@ -103,7 +105,7 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
                              text-sm transition-all ${cfg.color}
                              ${isMe ? 'ring-1 ring-brand-violet/40' : ''}`}
               >
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
+                <span className="text-base leading-none">{guest.emoji || '🙂'}</span>
                 <span className={isMe ? 'text-brand-pearl font-medium' : 'text-brand-pearl/70'}>
                   {guest.name}{isMe ? ' (ты)' : ''}
                 </span>

@@ -4,15 +4,15 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { Plus, Trash2, Pencil, Gift, Link2, X, Image, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, Pencil, Gift, Link2, X, Image } from 'lucide-react'
 import { wishlistApi } from '@/lib/api'
 import { WishlistItem, CreateWishlistItemForm } from '@/types'
 
 const EMPTY_FORM: CreateWishlistItemForm = {
-  name: '', price: '', photoUrl: '', sourceUrl: '', description: '', priority: 0,
+  name: '', price: '', currency: 'RUB', photoUrl: '', sourceUrl: '', description: '',
 }
 
-const STATUS_LABELS = {
+const STATUS_LABELS: Record<string, { label: string; cls: string }> = {
   Available: { label: 'Свободен', cls: 'badge-available' },
   Reserved: { label: 'Выбран', cls: 'badge-reserved' },
   Collective: { label: 'Сбор', cls: 'badge-collective' },
@@ -83,9 +83,9 @@ export default function WishlistPage() {
   const openEdit = (item: WishlistItem) => {
     setEditing(item)
     setForm({
-      name: item.name, price: item.price?.toString() ?? '',
+      name: item.name, price: item.price?.toString() ?? '', currency: item.currency ?? 'RUB',
       photoUrl: item.photoUrl ?? '', sourceUrl: item.sourceUrl ?? '',
-      description: item.description ?? '', priority: item.priority,
+      description: item.description ?? '',
     })
     setModal('edit')
   }
@@ -191,21 +191,9 @@ export default function WishlistPage() {
 
                 {/* Status */}
                 <span className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0
-                                  ${STATUS_LABELS[item.status].cls}`}>
-                  {STATUS_LABELS[item.status].label}
+                                  ${STATUS_LABELS[item.status]?.cls ?? 'badge-available'}`}>
+                  {STATUS_LABELS[item.status]?.label ?? item.status}
                 </span>
-
-                {/* Priority */}
-                <div className="flex flex-col gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => updateMutation.mutate({ id: item.id, data: { priority: item.priority + 1 } })}
-                    className="text-admin-muted hover:text-admin-text transition-colors">
-                    <ChevronUp size={14} />
-                  </button>
-                  <button onClick={() => updateMutation.mutate({ id: item.id, data: { priority: Math.max(0, item.priority - 1) } })}
-                    className="text-admin-muted hover:text-admin-text transition-colors">
-                    <ChevronDown size={14} />
-                  </button>
-                </div>
 
                 {/* Actions */}
                 <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -236,103 +224,108 @@ export default function WishlistPage() {
               className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
               onClick={closeModal}
             />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-lg
-                         bg-admin-surface border border-admin-border rounded-2xl shadow-2xl overflow-hidden"
-            >
-              {/* Modal header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-admin-border">
-                <h2 className="font-semibold text-admin-text">
-                  {modal === 'create' ? 'Добавить товар' : 'Редактировать товар'}
-                </h2>
-                <button onClick={closeModal} className="text-admin-muted hover:text-admin-text transition-colors">
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* URL import */}
-              <div className="px-6 pt-4">
-                <div className="flex gap-2 mb-4">
-                  <input
-                    className="admin-input text-xs"
-                    placeholder="Вставь ссылку с маркетплейса для автозаполнения..."
-                    value={importUrl}
-                    onChange={e => setImportUrl(e.target.value)}
-                  />
-                  <button
-                    onClick={() => importMutation.mutate(importUrl)}
-                    disabled={!importUrl || importMutation.isPending}
-                    className="shrink-0 px-3 py-2 bg-admin-elevated border border-admin-border rounded-lg
-                               text-admin-muted hover:text-admin-text text-xs transition-all
-                               disabled:opacity-40 disabled:cursor-not-allowed"
-                  >
-                    {importMutation.isPending ? '...' : 'Загрузить'}
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="w-full max-w-2xl bg-admin-surface border border-admin-border rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
+              >
+                {/* Modal header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-admin-border">
+                  <h2 className="font-semibold font-display text-admin-text">
+                    {modal === 'create' ? 'Добавить товар' : 'Редактировать товар'}
+                  </h2>
+                  <button onClick={closeModal} className="text-admin-muted hover:text-admin-text transition-colors">
+                    <X size={18} />
                   </button>
                 </div>
-              </div>
 
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4 max-h-[60vh] overflow-y-auto">
-                <div>
-                  <label className="block text-xs text-admin-muted mb-1.5">Название *</label>
-                  <input className="admin-input" placeholder="Что хочешь получить?" value={form.name}
-                    onChange={setField('name')} required maxLength={200} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-admin-muted mb-1.5">Цена (₽)</label>
-                    <input type="number" className="admin-input" placeholder="0"
-                      value={form.price} onChange={setField('price')} min={0} step="0.01" />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-admin-muted mb-1.5">Приоритет</label>
-                    <input type="number" className="admin-input" placeholder="0"
-                      value={form.priority} onChange={setField('priority')} min={0} max={100} />
+                {/* URL import */}
+                <div className="px-6 pt-4">
+                  <div className="flex gap-2 mb-4">
+                    <input
+                      className="admin-input text-xs"
+                      placeholder="Вставь ссылку с маркетплейса для автозаполнения..."
+                      value={importUrl}
+                      onChange={e => setImportUrl(e.target.value)}
+                    />
+                    <button
+                      onClick={() => importMutation.mutate(importUrl)}
+                      disabled={!importUrl || importMutation.isPending}
+                      className="shrink-0 px-3 py-2 bg-admin-elevated border border-admin-border rounded-lg
+                                 text-admin-muted hover:text-admin-text text-xs transition-all
+                                 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {importMutation.isPending ? '...' : 'Загрузить'}
+                    </button>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs text-admin-muted mb-1.5">Фото (URL)</label>
-                  <div className="flex gap-2 items-start">
-                    <input className="admin-input" placeholder="https://..." value={form.photoUrl}
-                      onChange={setField('photoUrl')} />
-                    {form.photoUrl && (
-                      <img src={form.photoUrl} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 border border-admin-border" />
-                    )}
+                {/* Form — two columns on desktop */}
+                <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs text-admin-muted mb-1.5">Название *</label>
+                      <input className="admin-input" placeholder="Что хочешь получить?" value={form.name}
+                        onChange={setField('name')} required maxLength={200} />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs text-admin-muted mb-1.5">Цена</label>
+                      <input type="number" className="admin-input" placeholder="0"
+                        value={form.price} onChange={setField('price')} min={0} step="0.01" />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs text-admin-muted mb-1.5">Валюта</label>
+                      <select className="admin-input" value={form.currency} onChange={e => setForm(p => ({ ...p, currency: e.target.value }))}>
+                        <option value="RUB">₽ Рубль</option>
+                        <option value="BYN">Br Бел. рубль</option>
+                        <option value="USD">$ Доллар</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs text-admin-muted mb-1.5">Фото (URL)</label>
+                      <div className="flex gap-2 items-start">
+                        <input className="admin-input" placeholder="https://..." value={form.photoUrl}
+                          onChange={setField('photoUrl')} />
+                        {form.photoUrl && (
+                          <img src={form.photoUrl} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 border border-admin-border" />
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs text-admin-muted mb-1.5">Ссылка на товар</label>
+                      <input className="admin-input" placeholder="https://wildberries.ru/..." value={form.sourceUrl}
+                        onChange={setField('sourceUrl')} />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs text-admin-muted mb-1.5">Описание</label>
+                      <textarea className="admin-input resize-none" rows={2} placeholder="Дополнительные пожелания..."
+                        value={form.description} onChange={setField('description')} maxLength={1000} />
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-xs text-admin-muted mb-1.5">Ссылка на товар</label>
-                  <input className="admin-input" placeholder="https://wildberries.ru/..." value={form.sourceUrl}
-                    onChange={setField('sourceUrl')} />
-                </div>
-
-                <div>
-                  <label className="block text-xs text-admin-muted mb-1.5">Описание</label>
-                  <textarea className="admin-input resize-none" rows={3} placeholder="Дополнительные пожелания..."
-                    value={form.description} onChange={setField('description')} maxLength={1000} />
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={closeModal}
-                    className="flex-1 py-2.5 rounded-xl border border-admin-border text-admin-muted
-                               hover:text-admin-text hover:border-admin-muted transition-all text-sm">
-                    Отмена
-                  </button>
-                  <button type="submit" disabled={isPending}
-                    className="flex-1 py-2.5 rounded-xl bg-brand-purple hover:bg-brand-violet text-white
-                               font-semibold transition-all text-sm disabled:opacity-50">
-                    {isPending ? 'Сохранение...' : modal === 'create' ? 'Добавить' : 'Сохранить'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={closeModal}
+                      className="flex-1 py-2.5 rounded-xl border border-admin-border text-admin-muted
+                                 hover:text-admin-text hover:border-admin-muted transition-all text-sm">
+                      Отмена
+                    </button>
+                    <button type="submit" disabled={isPending}
+                      className="flex-1 py-2.5 rounded-xl bg-brand-purple hover:bg-brand-violet text-white
+                                 font-semibold transition-all text-sm disabled:opacity-50">
+                      {isPending ? 'Сохранение...' : modal === 'create' ? 'Добавить' : 'Сохранить'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>

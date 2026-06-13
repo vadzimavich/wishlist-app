@@ -135,6 +135,7 @@ export function InviteClientPage({ initialData, token }: Props) {
         guestToken={token}
         eventId={page.eventId}
         currentGuestId={page.currentGuest.id}
+        items={page.wishlistItems}
       />
 
       {/* Footer */}

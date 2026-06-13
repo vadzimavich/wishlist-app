@@ -4,14 +4,14 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { Plus, Trash2, Pencil, Calendar, Users, X, Copy, Check } from 'lucide-react'
+import { Plus, Trash2, Pencil, Calendar, Users, X, Copy, Check, Eye } from 'lucide-react'
 import { eventsApi, guestsApi } from '@/lib/api'
 import { Event, CreateEventForm, CreateGuestForm, Guest } from '@/types'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
 const EMPTY_EVENT: CreateEventForm = { title: '', date: '', location: '', description: '', coverImageUrl: '' }
-const EMPTY_GUEST: CreateGuestForm = { name: '', phone: '', email: '' }
+const EMPTY_GUEST: CreateGuestForm = { name: '', emoji: '🙂' }
 
 function useCopyToClipboard() {
   const [copied, setCopied] = useState<string | null>(null)
@@ -24,7 +24,7 @@ function useCopyToClipboard() {
   return { copied, copy }
 }
 
-const RSVP_LABELS = {
+const RSVP_LABELS: Record<string, { label: string; color: string }> = {
   Pending: { label: 'Ожидает', color: 'text-admin-muted' },
   Attending: { label: 'Придёт', color: 'text-success' },
   NotAttending: { label: 'Не придёт', color: 'text-danger' },
@@ -222,63 +222,66 @@ export default function EventsPage() {
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={closeEventModal} />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-lg
-                         bg-admin-surface border border-admin-border rounded-2xl shadow-2xl overflow-hidden"
-            >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-admin-border">
-                <h2 className="font-semibold text-admin-text">
-                  {eventModal === 'create' ? 'Новое событие' : 'Редактировать событие'}
-                </h2>
-                <button onClick={closeEventModal} className="text-admin-muted hover:text-admin-text"><X size={18} /></button>
-              </div>
-
-              <form onSubmit={handleEventSubmit} className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
-                <div>
-                  <label className="block text-xs text-admin-muted mb-1.5">Название *</label>
-                  <input className="admin-input" placeholder="День рождения, Новый год..." value={eventForm.title}
-                    onChange={setEF('title')} required maxLength={200} />
-                </div>
-                <div>
-                  <label className="block text-xs text-admin-muted mb-1.5">Дата и время *</label>
-                  <input type="datetime-local" className="admin-input" value={eventForm.date}
-                    onChange={setEF('date')} required />
-                </div>
-                <div>
-                  <label className="block text-xs text-admin-muted mb-1.5">Место</label>
-                  <input className="admin-input" placeholder="Адрес или место встречи" value={eventForm.location}
-                    onChange={setEF('location')} />
-                </div>
-                <div>
-                  <label className="block text-xs text-admin-muted mb-1.5">Описание</label>
-                  <textarea className="admin-input resize-none" rows={3} value={eventForm.description}
-                    onChange={setEF('description')} placeholder="Детали события..." />
-                </div>
-                <div>
-                  <label className="block text-xs text-admin-muted mb-1.5">Обложка (URL)</label>
-                  <input className="admin-input" placeholder="https://..." value={eventForm.coverImageUrl}
-                    onChange={setEF('coverImageUrl')} />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="w-full max-w-2xl bg-admin-surface border border-admin-border rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
+              >
+                <div className="flex items-center justify-between px-6 py-4 border-b border-admin-border">
+                  <h2 className="font-semibold font-display text-admin-text">
+                    {eventModal === 'create' ? 'Новое событие' : 'Редактировать событие'}
+                  </h2>
+                  <button onClick={closeEventModal} className="text-admin-muted hover:text-admin-text"><X size={18} /></button>
                 </div>
 
-                <div className="flex gap-3 pt-2">
-                  <button type="button" onClick={closeEventModal}
-                    className="flex-1 py-2.5 rounded-xl border border-admin-border text-admin-muted
-                               hover:text-admin-text text-sm transition-all">
-                    Отмена
-                  </button>
-                  <button type="submit" disabled={createEvent.isPending || updateEvent.isPending}
-                    className="flex-1 py-2.5 rounded-xl bg-brand-purple hover:bg-brand-violet text-white
-                               font-semibold text-sm transition-all disabled:opacity-50">
-                    {createEvent.isPending || updateEvent.isPending ? '...' :
-                      eventModal === 'create' ? 'Создать' : 'Сохранить'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+                <form onSubmit={handleEventSubmit} className="px-6 py-5 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs text-admin-muted mb-1.5">Название *</label>
+                      <input className="admin-input" placeholder="День рождения, Новый год..." value={eventForm.title}
+                        onChange={setEF('title')} required maxLength={200} />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-admin-muted mb-1.5">Дата и время *</label>
+                      <input type="datetime-local" className="admin-input" value={eventForm.date}
+                        onChange={setEF('date')} required />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-admin-muted mb-1.5">Место</label>
+                      <input className="admin-input" placeholder="Адрес или место встречи" value={eventForm.location}
+                        onChange={setEF('location')} />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-admin-muted mb-1.5">Обложка (URL)</label>
+                      <input className="admin-input" placeholder="https://..." value={eventForm.coverImageUrl}
+                        onChange={setEF('coverImageUrl')} />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-admin-muted mb-1.5">Описание</label>
+                      <textarea className="admin-input resize-none" rows={2} value={eventForm.description}
+                        onChange={setEF('description')} placeholder="Детали события..." />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={closeEventModal}
+                      className="flex-1 py-2.5 rounded-xl border border-admin-border text-admin-muted
+                                 hover:text-admin-text text-sm transition-all">
+                      Отмена
+                    </button>
+                    <button type="submit" disabled={createEvent.isPending || updateEvent.isPending}
+                      className="flex-1 py-2.5 rounded-xl bg-brand-purple hover:bg-brand-violet text-white
+                                 font-semibold text-sm transition-all disabled:opacity-50">
+                      {createEvent.isPending || updateEvent.isPending ? '...' :
+                        eventModal === 'create' ? 'Создать' : 'Сохранить'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
@@ -308,12 +311,25 @@ export default function EventsPage() {
               {/* Add guest form */}
               <form onSubmit={handleAddGuest} className="px-5 py-4 border-b border-admin-border space-y-3">
                 <p className="text-xs font-medium text-admin-muted uppercase tracking-wide">Добавить гостя</p>
+                <div className="flex gap-3 items-end">
+                  <div>
+                    <label className="block text-xs text-admin-muted mb-1.5">Аватар</label>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {['🙂','😎','🥳','🎉','💝','🎀','🌸','✨','🦄','🐱','🐶','🌟'].map(e => (
+                        <button key={e} type="button" onClick={() => setGuestForm(p => ({ ...p, emoji: e }))}
+                          className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all
+                            ${guestForm.emoji === e
+                              ? 'bg-brand-purple/20 border border-brand-violet/40 scale-110'
+                              : 'bg-admin-elevated border border-admin-border hover:border-admin-muted'
+                            }`}>
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
                 <input className="admin-input text-sm" placeholder="Имя *" value={guestForm.name}
                   onChange={setGF('name')} required />
-                <input className="admin-input text-sm" placeholder="Телефон" value={guestForm.phone}
-                  onChange={setGF('phone')} type="tel" />
-                <input className="admin-input text-sm" placeholder="Email" value={guestForm.email}
-                  onChange={setGF('email')} type="email" />
                 <button type="submit" disabled={addGuest.isPending}
                   className="w-full py-2 bg-brand-purple hover:bg-brand-violet text-white text-sm rounded-xl
                              transition-all disabled:opacity-50">
@@ -329,13 +345,13 @@ export default function EventsPage() {
                 {(currentGuestEvent?.guests ?? []).map((guest) => (
                   <div key={guest.id}
                     className="flex items-center gap-3 py-3 border-b border-admin-border last:border-0">
-                    <div className="w-8 h-8 rounded-full bg-brand-purple/20 flex items-center justify-center text-xs font-bold text-brand-violet">
-                      {guest.name.charAt(0).toUpperCase()}
+                    <div className="w-8 h-8 rounded-full bg-brand-purple/20 flex items-center justify-center text-base">
+                      {guest.emoji || '🙂'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-admin-text truncate">{guest.name}</p>
-                      <p className={`text-xs ${RSVP_LABELS[guest.rsvpStatus].color}`}>
-                        {RSVP_LABELS[guest.rsvpStatus].label}
+                      <p className={`text-xs ${RSVP_LABELS[guest.rsvpStatus]?.color ?? 'text-admin-muted'}`}>
+                        {RSVP_LABELS[guest.rsvpStatus]?.label ?? guest.rsvpStatus}
                       </p>
                     </div>
 
@@ -350,6 +366,17 @@ export default function EventsPage() {
                     >
                       {copied === guest.id ? <Check size={14} className="text-success" /> : <Copy size={14} />}
                     </button>
+
+                    {/* Preview invite */}
+                    <a
+                      href={`/invite/${guest.token}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Просмотреть как гость"
+                      className="p-1.5 rounded-lg text-admin-muted hover:text-brand-violet hover:bg-brand-purple/10 transition-all"
+                    >
+                      <Eye size={14} />
+                    </a>
 
                     <button
                       onClick={() => deleteGuest.mutate({ eventId: guestModal.id, guestId: guest.id })}

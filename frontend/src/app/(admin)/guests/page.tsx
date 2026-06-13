@@ -9,7 +9,7 @@ import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import Link from 'next/link'
 
-const RSVP_LABELS = {
+const RSVP_LABELS: Record<string, { label: string; cls: string }> = {
   Pending:      { label: 'Ожидает',    cls: 'text-admin-muted bg-admin-muted/10 border-admin-muted/20' },
   Attending:    { label: 'Придёт',     cls: 'text-success  bg-success/10        border-success/20' },
   NotAttending: { label: 'Не придёт',  cls: 'text-danger   bg-danger/10         border-danger/20' },
@@ -100,7 +100,7 @@ export default function GuestsPage() {
               {/* Guest list */}
               <div className="space-y-2">
                 {ev.guests.map(guest => {
-                  const cfg = RSVP_LABELS[guest.rsvpStatus]
+                  const cfg = RSVP_LABELS[guest.rsvpStatus] ?? { label: guest.rsvpStatus, cls: 'text-admin-muted bg-admin-muted/10 border-admin-muted/20' }
                   return (
                     <motion.div
                       key={guest.id}
@@ -110,8 +110,8 @@ export default function GuestsPage() {
                     >
                       {/* Avatar */}
                       <div className="w-9 h-9 rounded-full bg-brand-purple/20 border border-brand-purple/15
-                                      flex items-center justify-center text-sm font-bold text-brand-violet shrink-0">
-                        {guest.name.charAt(0).toUpperCase()}
+                                      flex items-center justify-center text-base shrink-0">
+                        {guest.emoji || '🙂'}
                       </div>
 
                       {/* Info */}
@@ -119,13 +119,6 @@ export default function GuestsPage() {
                         <p className="text-sm font-medium text-admin-text">{guest.name}</p>
                         {guest.rsvpNote && (
                           <p className="text-xs text-admin-muted truncate mt-0.5">"{guest.rsvpNote}"</p>
-                        )}
-                        {(guest.phone || guest.email) && (
-                          <p className="text-xs text-admin-muted mt-0.5">
-                            {guest.phone && `📞 ${guest.phone}`}
-                            {guest.phone && guest.email && ' · '}
-                            {guest.email && `✉️ ${guest.email}`}
-                          </p>
                         )}
                       </div>
 
