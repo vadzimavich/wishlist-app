@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { useSprings, useSpring, animated, SpringValue } from '@react-spring/web'
+import { useSprings, useSpring, animated } from '@react-spring/web'
 import { GuestPublic } from '@/types'
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
 }
 
 const MARGIN = 50
+const ORBIT_RADIUS = 150
 
 function generateEdges(ids: string[], centerId?: string): [string, string][] {
   const sorted = [...ids].sort()
@@ -62,11 +63,12 @@ const nodeVariants = {
 
 export function InviteGuests({ guests, currentGuestId }: Props) {
   const graphRef = useRef<HTMLDivElement>(null)
-  const [springParams, setSpringParams] = useState({ tension: 170, friction: 26, mass: 1, minDistance: 70 })
+  const [springParams, setSpringParams] = useState({ tension: 170, friction: 26, mass: 1, minDistance: 110 })
   const [initialized, setInitialized] = useState(false)
   const [showDebug, setShowDebug] = useState(false)
   const draggedGuestIdRef = useRef<number | null>(null)
   const isDraggingRef = useRef(false)
+  const homePositionsRef = useRef<{ x: number; y: number }[]>([])
 
   const visibleGuests = useMemo(() => guests.filter(g => g.rsvpStatus !== 'NotAttending'), [guests])
   const attending = useMemo(() => guests.filter(g => g.rsvpStatus === 'Attending').length, [guests])
@@ -93,19 +95,16 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
     return map
   }, [orbitingGuests])
 
-  function computeRadialLayout(count: number, cx: number, cy: number, w: number, h: number): { x: number; y: number }[] {
+  function computeRadialLayout(count: number, cx: number, cy: number): { x: number; y: number }[] {
     if (count <= 1) return Array.from({ length: count }, () => ({ x: cx, y: cy }))
-
-    const availableRadius = Math.min(w, h) / 2 - MARGIN
-    const baseRadius = Math.max(60, Math.min(availableRadius, 50 + count * 8))
 
     // Single ring for small groups
     if (count <= 12) {
       return Array.from({ length: count }, (_, i) => {
         const angle = (i / count) * Math.PI * 2 - Math.PI / 2
         return {
-          x: cx + Math.cos(angle) * baseRadius * 0.6,
-          y: cy + Math.sin(angle) * baseRadius * 0.6,
+          x: cx + Math.cos(angle) * ORBIT_RADIUS,
+          y: cy + Math.sin(angle) * ORBIT_RADIUS,
         }
       })
     }
@@ -113,8 +112,8 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
     // Multi-ring spiral for 12+ guests
     return Array.from({ length: count }, (_, i) => {
       const t = i / count
-      const angle = t * Math.PI * 4 - Math.PI / 2  // 2 full rotations
-      const r = baseRadius * 0.6 * (0.6 + t * 0.4)  // inner to outer
+      const angle = t * Math.PI * 4 - Math.PI / 2
+      const r = ORBIT_RADIUS * (0.6 + t * 0.4)
       return {
         x: cx + Math.cos(angle) * r,
         y: cy + Math.sin(angle) * r,
@@ -132,7 +131,8 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
       const cx = w / 2, cy = h / 2
 
       if (orbitingGuests.length > 0) {
-        const positions = computeRadialLayout(orbitingGuests.length, cx, cy, w, h)
+        const positions = computeRadialLayout(orbitingGuests.length, cx, cy)
+        homePositionsRef.current = positions
         api.start(i => ({
           x: positions[i].x,
           y: positions[i].y,
@@ -192,8 +192,18 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
     const clampedY = Math.max(MARGIN, Math.min(rect.height - MARGIN, rawY))
 
     api.start(i => {
+      const home = homePositionsRef.current[i]
+      if (!home) return {}
+
       if (i === draggedIdx) {
-        return { x: clampedX, y: clampedY, immediate: true }
+        // Blend: 70% toward pointer, 30% toward home (rubber band feel)
+        const targetX = clampedX * 0.7 + home.x * 0.3
+        const targetY = clampedY * 0.7 + home.y * 0.3
+        return {
+          x: Math.max(MARGIN, Math.min(rect.width - MARGIN, targetX)),
+          y: Math.max(MARGIN, Math.min(rect.height - MARGIN, targetY)),
+          immediate: true,
+        }
       }
 
       const ox = springs[i].x.get()
@@ -203,31 +213,48 @@ export function InviteGuests({ guests, currentGuestId }: Props) {
       const dist = Math.sqrt(dx * dx + dy * dy)
       const threshold = springParams.minDistance
 
+      // Start with home position (return-to-orbit pull)
+      let targetX = home.x
+      let targetY = home.y
+
       if (dist < threshold && dist > 0.1) {
+        // Collision push — push away from dragged guest
         const pushStr = (threshold - dist) / threshold * 0.5
-        const pushX = ox - (dx / dist) * pushStr * threshold
-        const pushY = oy - (dy / dist) * pushStr * threshold
-        return {
-          x: Math.max(MARGIN, Math.min(rect.width - MARGIN, pushX)),
-          y: Math.max(MARGIN, Math.min(rect.height - MARGIN, pushY)),
-          config: { tension: 150, friction: 18, mass: 1.2 },
-          immediate: false,
-        }
+        targetX = home.x - (dx / dist) * pushStr * threshold
+        targetY = home.y - (dy / dist) * pushStr * threshold
       }
 
-      return {}
+      return {
+        x: Math.max(MARGIN, Math.min(rect.width - MARGIN, targetX)),
+        y: Math.max(MARGIN, Math.min(rect.height - MARGIN, targetY)),
+        config: { tension: 150, friction: 18, mass: 1.2 },
+        immediate: false,
+      }
     })
   }, [api, springs, springParams])
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (!isDraggingRef.current) return
     isDraggingRef.current = false
+    const draggedIdx = draggedGuestIdRef.current
     draggedGuestIdRef.current = null
     try {
       const el = graphRef.current
       if (el) el.releasePointerCapture(e.pointerId)
-    } catch {}
-  }, [])
+    } catch { /* pointer may not be captured if no drag started */ }
+
+    // Spring ALL guests back to their home orbit positions
+    api.start(i => {
+      const home = homePositionsRef.current[i]
+      if (!home) return {}
+      return {
+        x: home.x,
+        y: home.y,
+        config: { tension: 100, friction: 22, mass: 1.2 },
+        immediate: false,
+      }
+    })
+  }, [api])
 
   const Slider = useCallback(({ label, value, min, max, step, onChange }: {
     label: string; value: number; min: number; max: number; step: number
