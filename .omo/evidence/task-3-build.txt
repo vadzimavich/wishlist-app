@@ -1,0 +1,22 @@
+Build VERIFICATION: Task 3 - Add Contact Fields to Guest
+========================================================
+
+Build result: Сборка успешно завершена (Build succeeded)
+Warnings: 4 (pre-existing NU1510, NU1903)
+Errors: 0
+
+Migration: 20260614204650_AddGuestContactFields (Pending)
+
+Guest entity columns added:
+- Telegram (string?, character varying(100))
+- Phone (string?, character varying(30))
+- IsContactShared (bool, default false)
+
+DTOs updated:
+- GuestPublicDto: +string? Telegram, +string? Phone
+- GuestSelfDto: +string? Telegram, +string? Phone, +bool IsContactShared
+- GuestDto: +string? Telegram, +string? Phone, +bool IsContactShared
+
+Construction sites fixed:
+- Controllers.cs (1 GuestPublicDto)
+- AppServices.cs (2 GuestPublicDto, 3 GuestDto, 1 GuestSelfDto)

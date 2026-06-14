@@ -12,6 +12,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Guest> Guests => Set<Guest>();
     public DbSet<GiftClaim> GiftClaims => Set<GiftClaim>();
     public DbSet<CollectiveParticipant> CollectiveParticipants => Set<CollectiveParticipant>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<ActivityEvent> ActivityEvents => Set<ActivityEvent>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -111,6 +113,47 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
              .WithMany(g => g.CollectiveParticipations)
              .HasForeignKey(cp => cp.GuestId)
              .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ── ActivityEvent ──────────────────────────────────────────
+        mb.Entity<ActivityEvent>(e =>
+        {
+            e.HasKey(ae => ae.Id);
+            e.Property(ae => ae.ActionType).HasMaxLength(50).IsRequired();
+            e.HasIndex(ae => new { ae.EventId, ae.CreatedAt }).IsDescending(false, true);
+
+            e.HasOne(ae => ae.Event)
+             .WithMany()
+             .HasForeignKey(ae => ae.EventId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(ae => ae.Guest)
+             .WithMany()
+             .HasForeignKey(ae => ae.GuestId)
+             .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ── ChatMessage ─────────────────────────────────────────────
+        mb.Entity<ChatMessage>(e =>
+        {
+            e.HasKey(cm => cm.Id);
+            e.Property(cm => cm.Text).HasMaxLength(1000).IsRequired();
+            e.HasIndex(cm => new { cm.EventId, cm.CreatedAt }).IsDescending(false, true);
+
+            e.HasOne(cm => cm.Event)
+             .WithMany()
+             .HasForeignKey(cm => cm.EventId)
+             .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(cm => cm.Guest)
+             .WithMany()
+             .HasForeignKey(cm => cm.GuestId)
+             .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(cm => cm.GiftClaim)
+             .WithMany()
+             .HasForeignKey(cm => cm.ClaimId)
+             .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

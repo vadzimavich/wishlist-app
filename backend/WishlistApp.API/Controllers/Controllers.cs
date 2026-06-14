@@ -193,7 +193,7 @@ public class GuestsController(IGuestService guestService, IWishlistHubService hu
         var pageDto = await guestService.GetInvitePageAsync(token);
         await hub.NotifyGuestRsvpUpdatedAsync(
             pageDto.EventId,
-            new GuestPublicDto(guest.Id, guest.Name, guest.Emoji, guest.RsvpStatus, guest.GuestCount)
+            new GuestPublicDto(guest.Id, guest.Name, guest.Emoji, guest.RsvpStatus, guest.GuestCount, guest.Telegram, guest.Phone)
         );
 
         return ApiOk(guest);

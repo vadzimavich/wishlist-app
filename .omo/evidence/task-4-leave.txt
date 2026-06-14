@@ -1,0 +1,49 @@
+# Task 4: CancelClaimAsync Participant Leave — QA Evidence
+## Date: 2026-06-14
+
+## Scenario 1: Participant leaves collective (claimer stays)
+- Guest A claims gift as Collective → CLAIM_ID = d07453b3-09e7-4f8c-ad50-4808ba057698
+- Guest B joins → participant shown in response
+- Guest B cancels (POST /cancel with Guest B token) → 200 OK
+
+### DB: Guest B participation
+ Id | Name   | IsActive | LeftAt                       | JoinedAt
+----+--------+----------+------------------------------+------------------------------
+ .. | Guest B| f        | 2026-06-14 20:49:35.909141+00 | 2026-06-14 20:49:29.211341+00
+
+### DB: All participants (claim still active)
+ Name   | IsActive | LeftAt
+--------+----------+-------------------------------
+ Guest A| t        |
+ Guest B| f        | 2026-06-14 20:49:35.909141+00
+
+### Claim status: IsActive = t
+
+### API Response: Only 1 participant returned (Guest A filtered out by p.IsActive)
+ PASS
+
+## Scenario 2: Last participant (non-claimer) leaves → auto-close claim
+Not reachable via API alone — claimer always cancels via claimer path.
+Edge case code path is correct: `if (!claim.Participants.Any(p => p.IsActive))` will trigger if all participants inactive.
+
+## Scenario 3: Claimer full cancel
+- Guest A (claimer) cancels → 200 OK
+- Response: status=Available, activeClaim=null
+-
+### DB: Claim IsActive = f, Item Status = Available
+ PASS
+
+## Scenario 4: MapToDto filters inactive participants
+- API returns only Guest A in participants list after Guest B left
+- Confirmed: `.Where(p => p.IsActive)` works
+ PASS
+
+## Verification
+- [x] IsActive field exists on CollectiveParticipant (default true)
+- [x] LeftAt field exists (DateTime? nullable)
+- [x] Participants list in response excludes inactive members
+- [x] Claimer cancel still works (full cancel)
+- [x] Participant leave sets IsActive=false, LeftAt=UtcNow
+- [x] Claim stays active if other participants remain
+- [x] Build succeeds (dotnet build)
+- [x] Migrations applied (DB schema updated)

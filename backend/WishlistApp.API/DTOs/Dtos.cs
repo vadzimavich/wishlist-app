@@ -117,7 +117,10 @@ public record GuestDto(
     RsvpStatus RsvpStatus,
     string? RsvpNote,
     int GuestCount,
-    string InviteUrl  // Генерируется динамически
+    string InviteUrl,  // Генерируется динамически
+    string? Telegram,
+    string? Phone,
+    bool IsContactShared
 );
 
 public record CreateGuestRequest(
@@ -160,7 +163,9 @@ public record GuestPublicDto(
     string Name,
     string Emoji,
     RsvpStatus RsvpStatus,
-    int GuestCount
+    int GuestCount,
+    string? Telegram,
+    string? Phone
 );
 
 public record GuestSelfDto(
@@ -170,7 +175,10 @@ public record GuestSelfDto(
     string Token,
     RsvpStatus RsvpStatus,
     string? RsvpNote,
-    int GuestCount
+    int GuestCount,
+    string? Telegram,
+    string? Phone,
+    bool IsContactShared
 );
 
 // ─── GiftClaim ────────────────────────────────────────────────────────────────
@@ -210,4 +218,30 @@ public record ParsedProductDto(
     string? ImageUrl,
     string? Description,
     string SourceUrl
+);
+
+// ─── ChatMessage ───────────────────────────────────────────────────
+
+public record ChatMessageDto(
+    Guid Id,
+    Guid EventId,
+    Guid? GuestId,
+    string GuestName,
+    string GuestEmoji,
+    string Text,
+    DateTime? EditedAt,
+    bool IsDeleted,
+    DateTime CreatedAt
+);
+
+// ─── ActivityEvent ───────────────────────────────────────────────────────────
+
+public record ActivityEventDto(
+    Guid Id,
+    Guid EventId,
+    Guid? GuestId,
+    string ActionType,
+    Guid? RelatedItemId,
+    string? Metadata,
+    DateTime CreatedAt
 );

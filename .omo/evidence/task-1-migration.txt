@@ -1,0 +1,28 @@
+=== Task 1: Add ChatMessage entity + DbSet + migration ===
+Date: 2026-06-14 20:44 UTC
+
+## Migration: AddChatMessage
+File: backend/WishlistApp.API/Migrations/20260614204415_AddChatMessage.cs
+
+## ChatMessages table columns:
+- Id (Guid, PK)
+- EventId (Guid, FK → Events, NOT NULL, Cascade)
+- ClaimId (Guid?, nullable, FK → GiftClaims, SetNull)
+- GuestId (Guid, FK → Guests, NOT NULL, Restrict)
+- Text (string(1000), NOT NULL)
+- EditedAt (DateTime?, nullable)
+- IsDeleted (bool, NOT NULL)
+- CreatedAt (DateTime, NOT NULL)
+
+## Indexes:
+- IX_ChatMessages_EventId_CreatedAt (EventId ASC, CreatedAt DESC)
+- IX_ChatMessages_ClaimId (ClaimId)
+- IX_ChatMessages_GuestId (GuestId)
+
+## Files modified:
+- Models/Entities.cs — added ChatMessage class (lines 160-177)
+- DTOs/Dtos.cs — added ChatMessageDto record
+- Data/AppDbContext.cs — added DbSet<ChatMessage> + Fluent config
+- Migrations/20260614204415_AddChatMessage.cs — new migration
+
+## Build result: Success (0 errors, 2 warnings — pre-existing)

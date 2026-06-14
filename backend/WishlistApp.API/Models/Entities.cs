@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace WishlistApp.API.Models;
 
 // ─── User ───────────────────────────────────────────────────────────────────
@@ -106,6 +108,11 @@ public class Guest
     public string Token { get; set; } = Guid.NewGuid().ToString("N"); // Уникальный токен для ссылки
     public RsvpStatus RsvpStatus { get; set; } = RsvpStatus.Pending;
     public string? RsvpNote { get; set; }
+    [MaxLength(100)]
+    public string? Telegram { get; set; }            // Telegram username/contact
+    [MaxLength(30)]
+    public string? Phone { get; set; }               // Phone number
+    public bool IsContactShared { get; set; }        // Opt-in flag to share contact info
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation
@@ -146,8 +153,47 @@ public class CollectiveParticipant
     public Guid GiftClaimId { get; set; }
     public Guid GuestId { get; set; }
     public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
+    public bool IsActive { get; set; } = true;
+    public DateTime? LeftAt { get; set; }
 
     // Navigation
     public GiftClaim GiftClaim { get; set; } = null!;
     public Guest Guest { get; set; } = null!;
+}
+
+// ─── ChatMessage ───────────────────────────────────────────────────
+
+public class ChatMessage
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid EventId { get; set; }
+    public Guid? ClaimId { get; set; }             // NULL = event chat, non-NULL = gift-claim chat
+    public Guid GuestId { get; set; }
+    public string Text { get; set; } = string.Empty;
+    public DateTime? EditedAt { get; set; }         // NULL = never edited
+    public bool IsDeleted { get; set; }             // soft-delete for moderation
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation
+    public Event Event { get; set; } = null!;
+    public Guest Guest { get; set; } = null!;
+    public GiftClaim? GiftClaim { get; set; }
+}
+
+// ─── ActivityEvent ──────────────────────────────────────────────────────────
+
+public class ActivityEvent
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid EventId { get; set; }
+    public Guid? GuestId { get; set; }
+
+    public string ActionType { get; set; } = string.Empty;
+    public Guid? RelatedItemId { get; set; }
+    public string? Metadata { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation
+    public Event Event { get; set; } = null!;
+    public Guest? Guest { get; set; }
 }

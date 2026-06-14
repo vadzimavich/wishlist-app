@@ -1,0 +1,31 @@
+=== Task 2 Migration Evidence ===
+Date: 2026-06-14
+Entity: ActivityEvent
+Migration: AddActivityEvent
+
+=== Verification ===
+
+1. ActivityEvents table was already created in AddChatMessage migration (20260614204415_AddChatMessage.cs)
+   - Columns: Id (uuid PK), EventId (uuid FK→Events), GuestId (uuid? nullable), 
+     ActionType (varchar(50), required), RelatedItemId (uuid? nullable), 
+     Metadata (text? nullable), CreatedAt (timestamptz)
+   - Indexes: IX_ActivityEvents_EventId_CreatedAt (descending), IX_ActivityEvents_GuestId
+   - Foreign keys: FK_ActivityEvents_Events_EventId (CASCADE), FK_ActivityEvents_Guests_GuestId (SET NULL)
+
+2. Models/Entities.cs: ActivityEvent class added with all fields + navigations
+3. Data/AppDbContext.cs: DbSet<ActivityEvent> ActivityEvents added + EF config
+4. DTOs/Dtos.cs: ActivityEventDto record added
+
+5. AddActivityEvent migration (20260614204425_AddActivityEvent.cs) is empty Up/Down
+   because all changes were already applied in AddChatMessage. EF confirmed no diff.
+   This is correct behavior — the entity class was missing but the schema already existed.
+
+=== Migration output ===
+Build succeeded.
+Done. To undo this action, use 'ef migrations remove'
+
+=== Files changed ===
+- Models/Entities.cs: Added ActivityEvent entity
+- Data/AppDbContext.cs: Added DbSet + EF OnModelCreating config
+- DTOs/Dtos.cs: Added ActivityEventDto record
+- Migrations/: AddActivityEvent migration created

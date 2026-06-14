@@ -90,9 +90,9 @@ public class WishlistService(AppDbContext db) : IWishlistService
 
     private static GiftClaimDto MapClaimToDto(GiftClaim claim) => new(
         claim.Id, claim.WishlistItemId,
-        new GuestPublicDto(claim.Guest.Id, claim.Guest.Name, claim.Guest.Emoji, claim.Guest.RsvpStatus, claim.Guest.GuestCount),
+        new GuestPublicDto(claim.Guest.Id, claim.Guest.Name, claim.Guest.Emoji, claim.Guest.RsvpStatus, claim.Guest.GuestCount, claim.Guest.Telegram, claim.Guest.Phone),
         claim.Type,
-        claim.Participants.Select(p => new GuestPublicDto(p.Guest.Id, p.Guest.Name, p.Guest.Emoji, p.Guest.RsvpStatus, p.Guest.GuestCount)).ToList(),
+        claim.Participants.Where(p => p.IsActive).Select(p => new GuestPublicDto(p.Guest.Id, p.Guest.Name, p.Guest.Emoji, p.Guest.RsvpStatus, p.Guest.GuestCount, p.Guest.Telegram, p.Guest.Phone)).ToList(),
         claim.CreatedAt
     );
 }
@@ -184,7 +184,7 @@ public class EventService(AppDbContext db) : IEventService
         ev.IsActive,
         ev.Guests.Select(g => new GuestDto(
             g.Id, g.Name, g.Emoji, g.Token, g.RsvpStatus, g.RsvpNote, g.GuestCount,
-            $"/invite/{g.Token}"
+            $"/invite/{g.Token}", g.Telegram, g.Phone, g.IsContactShared
         )).ToList(),
         ev.CreatedAt
     );
@@ -221,7 +221,8 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
 
         var baseUrl = config["App:BaseUrl"] ?? "http://localhost:3000";
         return new GuestDto(guest.Id, guest.Name, guest.Emoji,
-            guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount, $"{baseUrl}/invite/{guest.Token}");
+            guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount, $"{baseUrl}/invite/{guest.Token}",
+            guest.Telegram, guest.Phone, guest.IsContactShared);
     }
 
     public async Task<GuestDto> UpdateGuestAsync(Guid userId, Guid eventId, Guid guestId, UpdateGuestRequest request)
@@ -242,7 +243,8 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
 
         var baseUrl = config["App:BaseUrl"] ?? "http://localhost:3000";
         return new GuestDto(guest.Id, guest.Name, guest.Emoji,
-            guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount, $"{baseUrl}/invite/{guest.Token}");
+            guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount, $"{baseUrl}/invite/{guest.Token}",
+            guest.Telegram, guest.Phone, guest.IsContactShared);
     }
 
     public async Task DeleteGuestAsync(Guid userId, Guid eventId, Guid guestId)
@@ -290,10 +292,10 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
             HostName: guest.Event.User.Name,
             HostAvatarUrl: guest.Event.User.AvatarUrl,
             Guests: guest.Event.Guests
-                .Select(g => new GuestPublicDto(g.Id, g.Name, g.Emoji, g.RsvpStatus, g.GuestCount))
+                .Select(g => new GuestPublicDto(g.Id, g.Name, g.Emoji, g.RsvpStatus, g.GuestCount, g.Telegram, g.Phone))
                 .ToList(),
             WishlistItems: wishlistItems.Select(WishlistService.MapToDto).ToList(),
-            CurrentGuest: new GuestSelfDto(guest.Id, guest.Name, guest.Emoji, guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount)
+            CurrentGuest: new GuestSelfDto(guest.Id, guest.Name, guest.Emoji, guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount, guest.Telegram, guest.Phone, guest.IsContactShared)
         );
     }
 
@@ -309,7 +311,8 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
 
         var baseUrl = config["App:BaseUrl"] ?? "http://localhost:3000";
         return new GuestDto(guest.Id, guest.Name, guest.Emoji,
-            guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount, $"{baseUrl}/invite/{guest.Token}");
+            guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount, $"{baseUrl}/invite/{guest.Token}",
+            guest.Telegram, guest.Phone, guest.IsContactShared);
     }
 }
 
@@ -405,12 +408,35 @@ public class GiftService(AppDbContext db) : IGiftService
 
         var claim = await db.GiftClaims
             .Include(c => c.WishlistItem)
-            .FirstOrDefaultAsync(c => c.Id == claimId && c.GuestId == guest.Id && c.IsActive)
-            ?? throw new KeyNotFoundException("Выбор не найден или нет прав на отмену.");
+            .Include(c => c.Participants)
+            .FirstOrDefaultAsync(c => c.Id == claimId && c.IsActive)
+            ?? throw new KeyNotFoundException("Выбор не найден.");
 
-        claim.IsActive = false;
-        claim.WishlistItem.Status = WishlistItemStatus.Available;
-        claim.WishlistItem.UpdatedAt = DateTime.UtcNow;
+        // Claimer (initiator) — full cancel
+        if (claim.GuestId == guest.Id)
+        {
+            claim.IsActive = false;
+            claim.WishlistItem.Status = WishlistItemStatus.Available;
+            claim.WishlistItem.UpdatedAt = DateTime.UtcNow;
+
+            await db.SaveChangesAsync();
+            return await LoadAndMapItemAsync(claim.WishlistItemId);
+        }
+
+        // Participant — leave the collective
+        var participant = claim.Participants.FirstOrDefault(p => p.GuestId == guest.Id && p.IsActive)
+            ?? throw new KeyNotFoundException("Вы не являетесь участником этого сбора.");
+
+        participant.IsActive = false;
+        participant.LeftAt = DateTime.UtcNow;
+
+        // If no active participants remain, close the claim
+        if (!claim.Participants.Any(p => p.IsActive))
+        {
+            claim.IsActive = false;
+            claim.WishlistItem.Status = WishlistItemStatus.Available;
+            claim.WishlistItem.UpdatedAt = DateTime.UtcNow;
+        }
 
         await db.SaveChangesAsync();
         return await LoadAndMapItemAsync(claim.WishlistItemId);
