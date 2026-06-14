@@ -95,38 +95,34 @@ export function InviteMap({ location, latitude, longitude }: Props) {
   if (!location) return null
 
   return (
-    <section className="relative z-10 px-4 py-8 max-w-2xl mx-auto">
-      <div className="liquid-glass p-4 rounded-2xl overflow-hidden">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-brand-champagne/10 border border-brand-champagne/20
-                          flex items-center justify-center shrink-0">
-            <MapPin size={18} className="text-brand-champagne" />
-          </div>
-          <div>
-            <p className="text-brand-pearl/40 text-xs uppercase tracking-wider">Где</p>
-            <p className="text-brand-pearl font-medium text-sm">{location}</p>
-          </div>
-        </div>
+    <section className="relative z-10 px-4 py-16 max-w-2xl mx-auto space-y-6">
+      {/* Location header + text */}
+      <div className="space-y-2">
+        <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight gradient-text-sweep">Где</h2>
+        <p className="text-brand-pearl/80 text-sm sm:text-base">{location}</p>
+      </div>
 
-        {mapError ? (
-          <a
-            href={`https://yandex.ru/maps/?text=${encodeURIComponent(location)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full h-[200px] rounded-xl bg-brand-deep/50 flex items-center justify-center
-                       text-brand-pearl/40 text-sm hover:text-brand-pearl/60 transition-colors"
-          >
-            <MapPin size={20} className="mr-2" />
-            Открыть на карте
-          </a>
-        ) : (
+      {/* Map in its own rounded container */}
+      {mapError ? (
+        <a
+          href={`https://yandex.ru/maps/?text=${encodeURIComponent(location)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full h-[200px] rounded-2xl bg-brand-deep/50 flex items-center justify-center
+                     text-brand-pearl/40 text-sm hover:text-brand-pearl/60 transition-colors"
+        >
+          <MapPin size={20} className="mr-2" />
+          Открыть на карте
+        </a>
+      ) : (
+        <div className="rounded-2xl overflow-hidden border border-brand-pearl/5">
           <div
             ref={mapRef}
-            className="w-full h-[300px] rounded-xl bg-brand-deep/50"
+            className="w-full h-[320px] bg-brand-deep/50"
             style={{ opacity: mapLoaded ? 1 : 0.5 }}
           />
-        )}
-      </div>
+        </div>
+      )}
     </section>
   )
 }
