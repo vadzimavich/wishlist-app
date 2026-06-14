@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import * as Tooltip from '@radix-ui/react-tooltip'
 import toast from 'react-hot-toast'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Gift, ExternalLink, X, Check, UserPlus } from 'lucide-react'
+import { Gift, ExternalLink, X, Check, UserPlus, MessageCircle } from 'lucide-react'
 import { giftsApi } from '@/lib/api'
-import { WishlistItem, ClaimType } from '@/types'
+import { WishlistItem, ClaimType, GuestPublic } from '@/types'
 import { formatPrice } from '@/lib/utils'
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
   eventId: string
   currentGuestId: string
   items: WishlistItem[]
+  onOpenCollectiveChat?: (claimId: string) => void
 }
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
@@ -25,10 +27,97 @@ const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
 
 const DEFAULT_STATUS = { label: '', cls: 'text-admin-muted bg-admin-muted/10 border-admin-muted/20' }
 
-export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: Props) {
+const STATUS_ORDER: Record<string, number> = {
+  Available: 0,
+  Collective: 1,
+  Reserved: 2,
+  Purchased: 3,
+}
+
+function ParticipantAvatars({ participants }: { participants: GuestPublic[] }) {
+  const visible = participants.slice(0, 4)
+  const overflow = participants.length - 4
+
+  return (
+    <div className="flex items-center gap-1">
+      <Tooltip.Provider delayDuration={200}>
+        {visible.map((p) => (
+          <Tooltip.Root key={p.id}>
+            <Tooltip.Trigger asChild>
+              <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs
+                               bg-brand-deep border border-brand-pearl/10 cursor-help
+                               select-none shrink-0">
+                {p.emoji}
+              </span>
+            </Tooltip.Trigger>
+            <Tooltip.Portal>
+              <Tooltip.Content
+                side="top"
+                sideOffset={4}
+                className="z-[60] px-2 py-1 text-xs rounded-md bg-[#1E1E2A] border border-brand-pearl/10
+                           text-brand-pearl shadow-lg"
+              >
+                {p.name}
+                <Tooltip.Arrow className="fill-[#1E1E2A]" />
+              </Tooltip.Content>
+            </Tooltip.Portal>
+          </Tooltip.Root>
+        ))}
+        {overflow > 0 && (
+          <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px]
+                           bg-brand-deep border border-brand-pearl/10 text-brand-pearl/60
+                           font-medium shrink-0">
+            +{overflow}
+          </span>
+        )}
+      </Tooltip.Provider>
+    </div>
+  )
+}
+
+function ProgressBar({ current, total }: { current: number; total: number }) {
+  const pct = Math.min(current / total, 1)
+  const isLow = pct < 0.4
+  const isMid = pct >= 0.4 && pct < 0.8
+  const isHigh = pct >= 0.8
+  const barBg = isLow ? 'bg-info/20' : isMid ? 'bg-warning/20' : 'bg-success/20'
+  const fillBg = isLow ? 'bg-info' : isMid ? 'bg-warning' : 'bg-success'
+  const textCls = isLow ? 'text-info' : isMid ? 'text-warning' : 'text-success'
+
+  return (
+    <div className="mt-2">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[11px] text-brand-pearl/50">
+          {current} из {total} присоединились
+        </span>
+        <span className={`text-[11px] font-medium ${textCls}`}>
+          {Math.round(pct * 100)}%
+        </span>
+      </div>
+      <div className={`h-1.5 rounded-full ${barBg} overflow-hidden`}>
+        <div
+          className={`h-full rounded-full transition-all duration-700 ease-out ${fillBg}`}
+          style={{ width: `${pct * 100}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+export function InviteWishlist({ guestToken, eventId, currentGuestId, items, onOpenCollectiveChat }: Props) {
+  const sortedItems = useMemo(() => {
+    return [...items].sort((a, b) => {
+      const orderA = STATUS_ORDER[a.status] ?? 99
+      const orderB = STATUS_ORDER[b.status] ?? 99
+      if (orderA !== orderB) return orderA - orderB
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
+  }, [items])
+
   const sectionRef = useRef<HTMLDivElement>(null)
   const [selectedItem, setSelectedItem] = useState<WishlistItem | null>(null)
   const [modalStep, setModalStep] = useState<'choose' | 'confirm' | 'success'>('choose')
+  const [successType, setSuccessType] = useState<'claim' | 'join'>('claim')
 
   useEffect(() => {
     const initGsap = async () => {
@@ -60,6 +149,7 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
       giftsApi.claimGift(guestToken, itemId, type),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['invite', guestToken] })
+      setSuccessType('claim')
       setModalStep('success')
       setTimeout(() => { setSelectedItem(null); setModalStep('choose') }, 2000)
     },
@@ -73,8 +163,8 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
     mutationFn: (claimId: string) => giftsApi.joinCollective(claimId, guestToken),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['invite', guestToken] })
-      toast.success('Ты присоединился к сбору! 🎉')
-      setSelectedItem(null)
+      setSuccessType('join')
+      setModalStep('success')
     },
     onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Ошибка'),
   })
@@ -118,7 +208,7 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
       </div>
 
       <div className="space-y-3">
-        {items.map(item => {
+        {sortedItems.map(item => {
           const status = STATUS_CONFIG[item.status] ?? DEFAULT_STATUS
           const myItem = isMyClaim(item)
           const inCollective = isInMyCollective(item)
@@ -129,7 +219,7 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
               key={item.id}
               layout
               className={`wish-card liquid-glass p-4 flex items-start gap-4 cursor-pointer
-                          transition-all duration-300
+                          transition-all duration-300 relative
                           ${item.status === 'Available' || canJoin
                             ? 'hover:border-brand-violet/40 hover:-translate-y-0.5'
                             : ''}`}
@@ -137,6 +227,20 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
               whileHover={item.status === 'Available' || canJoin ? { scale: 1.01 } : {}}
               whileTap={item.status === 'Available' || canJoin ? { scale: 0.99 } : {}}
             >
+              {/* Colored left border strip for collective items */}
+              {item.status === 'Collective' && item.activeClaim && (() => {
+                const claim = item.activeClaim!
+                const total = Math.max(claim.claimer.guestCount || 0, 5)
+                const pct = Math.min(claim.participants.length / total, 1)
+                const borderColor = pct < 0.4 ? '#60A5FA' : pct < 0.8 ? '#FBBF24' : '#4ADE80'
+                return (
+                  <div
+                    className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full"
+                    style={{ backgroundColor: borderColor }}
+                  />
+                )
+              })()}
+
               <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden shrink-0
                               bg-brand-deep border border-brand-pearl/5">
                 {item.photoUrl ? (
@@ -166,17 +270,29 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
                 </div>
 
                 {item.activeClaim && (
-                  <div className="mt-2">
+                  <div className="mt-2 space-y-1">
                     {myItem ? (
                       <p className="text-xs text-brand-violet">✓ Твой выбор</p>
                     ) : inCollective ? (
                       <p className="text-xs text-info">✓ Ты в сборе</p>
                     ) : (
-                      <p className="text-xs text-brand-pearl/40">
-                        {item.activeClaim.claimer.name}
-                        {item.activeClaim.participants.length > 0 &&
-                          ` + ${item.activeClaim.participants.length} чел.`}
-                      </p>
+                      <>
+                        {item.activeClaim.participants.length > 0 ? (
+                          <ParticipantAvatars participants={item.activeClaim.participants} />
+                        ) : (
+                          <p className="text-xs text-brand-pearl/40">
+                            {item.activeClaim.claimer.name}
+                          </p>
+                        )}
+                      </>
+                    )}
+
+                    {/* Progress bar for collective items */}
+                    {item.status === 'Collective' && item.activeClaim && (
+                      <ProgressBar
+                        current={item.activeClaim.participants.length}
+                        total={Math.max(item.activeClaim.claimer.guestCount || 0, 5)}
+                      />
                     )}
                   </div>
                 )}
@@ -291,11 +407,19 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
                     {selected.status === 'Collective' && !isMyClaim(selected) && !isInMyCollective(selected) && (
                       <>
                         <p className="text-brand-pearl/60 text-sm text-center">Групповой сбор</p>
-                        <p className="text-brand-pearl/40 text-xs text-center">
-                          Начал: {selected.activeClaim?.claimer.name}
-                          {selected.activeClaim && selected.activeClaim.participants.length > 0 &&
-                            ` · ещё ${selected.activeClaim.participants.length} чел.`}
-                        </p>
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                          <span className="text-xs text-brand-pearl/50">Начал:</span>
+                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs
+                                           bg-brand-deep border border-brand-pearl/10 shrink-0">
+                            {selected.activeClaim?.claimer.emoji}
+                          </span>
+                          <span className="text-xs text-brand-pearl/60">{selected.activeClaim?.claimer.name}</span>
+                        </div>
+                        {selected.activeClaim && selected.activeClaim.participants.length > 0 && (
+                          <div className="mt-2 flex justify-center">
+                            <ParticipantAvatars participants={selected.activeClaim.participants} />
+                          </div>
+                        )}
                         <button
                           onClick={() => selected.activeClaim && joinMutation.mutate(selected.activeClaim.id)}
                           disabled={joinMutation.isPending}
@@ -326,6 +450,11 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
                     {isInMyCollective(selected) && !isMyClaim(selected) && (
                       <>
                         <p className="text-info text-sm text-center">Ты участвуешь в сборе ✓</p>
+                        {selected.activeClaim && selected.activeClaim.participants.length > 0 && (
+                          <div className="mt-2 flex justify-center">
+                            <ParticipantAvatars participants={selected.activeClaim.participants} />
+                          </div>
+                        )}
                         <button
                           onClick={() => selected.activeClaim && cancelMutation.mutate(selected.activeClaim.id)}
                           className="w-full py-3 rounded-xl border border-danger/20 text-danger
@@ -349,7 +478,7 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
                     )}
                   </div>
 
-                  {modalStep === 'success' && (
+                  {modalStep === 'success' && successType === 'claim' && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -366,6 +495,64 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
                       </motion.div>
                       <p className="text-brand-pearl font-semibold text-lg">Отлично!</p>
                       <p className="text-brand-pearl/60 text-sm mt-1">Подарок выбран</p>
+                    </motion.div>
+                  )}
+
+                  {modalStep === 'success' && successType === 'join' && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="text-center py-4"
+                    >
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', delay: 0.1, damping: 12 }}
+                        className="w-16 h-16 rounded-full bg-info/20 border border-info/30
+                                   flex items-center justify-center mx-auto mb-4"
+                      >
+                        <Check size={28} className="text-info" />
+                      </motion.div>
+                      <p className="text-brand-pearl font-semibold text-lg">Ты в сборе!</p>
+                      <p className="text-brand-pearl/60 text-sm mt-1 mb-4">
+                        Вы участвуете в групповом сборе на этот подарок
+                      </p>
+
+                      {/* Participants list */}
+                      {selected.activeClaim && selected.activeClaim.participants.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-xs text-brand-pearl/40 mb-2">Участники сбора:</p>
+                          <div className="flex flex-wrap justify-center gap-2">
+                            {selected.activeClaim.participants.map((p) => (
+                              <div
+                                key={p.id}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full
+                                           bg-brand-deep border border-brand-pearl/5"
+                              >
+                                <span className="text-sm">{p.emoji}</span>
+                                <span className="text-xs text-brand-pearl/70">{p.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Chat button */}
+                      {selected.activeClaim && onOpenCollectiveChat && (
+                        <button
+                          onClick={() => {
+                            onOpenCollectiveChat(selected.activeClaim!.id)
+                            setSelectedItem(null)
+                            setModalStep('choose')
+                          }}
+                          className="w-full py-3 rounded-xl bg-info/20 border border-info/30
+                                     text-info font-semibold hover:bg-info/30 transition-all
+                                     flex items-center justify-center gap-2"
+                        >
+                          <MessageCircle size={16} />
+                          Написать в чат сбора
+                        </button>
+                      )}
                     </motion.div>
                   )}
                 </div>

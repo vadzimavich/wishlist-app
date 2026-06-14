@@ -31,6 +31,9 @@ export interface GuestPublic {
   emoji: string
   guestCount: number
   rsvpStatus: RsvpStatus
+  telegram?: string | null
+  phone?: string | null
+  isContactShared: boolean
 }
 
 export interface CollectiveParticipant {

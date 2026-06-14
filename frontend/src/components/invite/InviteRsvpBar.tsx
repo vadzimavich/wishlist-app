@@ -1,11 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
+import { Phone } from 'lucide-react'
 import { guestsApi } from '@/lib/api'
 import { GuestSelf, RsvpStatus } from '@/types'
+import { useContactStore } from '@/lib/stores/contactStore'
+import { ContactSharingModal } from './ContactSharingModal'
 
 interface Props {
   guest: GuestSelf
@@ -17,7 +20,11 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
   const [note, setNote] = useState('')
   const [expanded, setExpanded] = useState(false)
   const [pendingStatus, setPendingStatus] = useState<RsvpStatus | null>(null)
+  const [contactModalOpen, setContactModalOpen] = useState(false)
+  const [showContactPrompt, setShowContactPrompt] = useState(false)
+  const contactPromptDismissed = useRef(false)
   const isFormal = guest.guestCount > 1
+  const contactStore = useContactStore()
 
   const rsvpMutation = useMutation({
     mutationFn: (status: RsvpStatus) =>
@@ -29,9 +36,24 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
           ? (isFormal ? 'Отлично, ждём вас! 🎉' : 'Отлично, ждём тебя! 🎉')
           : (isFormal ? 'Жаль, что не придёте 😔' : 'Понял, жаль что не придёшь 😔')
       )
+      // Show contact sharing prompt after Attending RSVP
+      if (pendingStatus === 'Attending' && !contactPromptDismissed.current) {
+        // Small delay so toast appears first
+        setTimeout(() => setShowContactPrompt(true), 800)
+      }
     },
     onError: () => toast.error('Не удалось сохранить ответ'),
   })
+
+  const handleContactPromptAccept = () => {
+    setShowContactPrompt(false)
+    setContactModalOpen(true)
+  }
+
+  const handleContactPromptDismiss = () => {
+    setShowContactPrompt(false)
+    contactPromptDismissed.current = true
+  }
 
   const handleRsvp = (status: RsvpStatus) => {
     setPendingStatus(status)
@@ -61,6 +83,14 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
           <p className="text-brand-pearl/80 text-sm font-medium flex-1">
             {isFormal ? 'Вы придёте?' : 'Ты придёшь?'}
           </p>
+          <button
+            onClick={() => setContactModalOpen(true)}
+            className="p-2 rounded-lg text-brand-pearl/40 hover:text-brand-violet/70 hover:bg-brand-pearl/5
+                       transition-all active:scale-90"
+            title="Поделиться контактом"
+          >
+            <Phone size={16} />
+          </button>
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleRsvp('Attending')}
@@ -83,6 +113,42 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
           </div>
         </div>
       </motion.div>
+
+      {/* Contact sharing prompt banner */}
+      <AnimatePresence>
+        {showContactPrompt && (
+          <motion.div
+            initial={{ y: 60, opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 20, opacity: 0, scale: 0.95 }}
+            transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+            className="fixed bottom-[76px] inset-x-0 z-40 flex justify-center px-4 pointer-events-none"
+          >
+            <div className="liquid-glass px-4 py-3 pointer-events-auto shadow-2xl max-w-sm w-full">
+              <p className="text-brand-pearl/80 text-sm font-medium mb-3">
+                Хочешь поделиться контактом с другими гостями?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleContactPromptDismiss}
+                  className="flex-1 py-2 rounded-lg border border-brand-pearl/10 text-brand-pearl/50
+                             text-xs hover:text-brand-pearl/70 transition-colors"
+                >
+                  Нет, спасибо
+                </button>
+                <button
+                  onClick={handleContactPromptAccept}
+                  className="flex-1 py-2 rounded-lg bg-brand-violet/20 border border-brand-violet/30
+                             text-brand-violet text-xs font-medium hover:bg-brand-violet/30
+                             transition-all"
+                >
+                  Да, конечно
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Decline note modal */}
       <AnimatePresence>
@@ -137,6 +203,13 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
           </>
         )}
       </AnimatePresence>
+
+      {/* Contact sharing modal */}
+      <ContactSharingModal
+        open={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+        guestToken={guest.token}
+      />
     </>
   )
 }

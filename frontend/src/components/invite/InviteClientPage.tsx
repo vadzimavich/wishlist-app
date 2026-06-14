@@ -12,6 +12,8 @@ import { InviteMap } from './InviteMap'
 import { InviteGuests } from './InviteGuests'
 import { InviteWishlist } from './InviteWishlist'
 import { InviteRsvpBar } from './InviteRsvpBar'
+import { useContactStore } from '@/lib/stores/contactStore'
+import { InviteActivityFeed } from './InviteActivityFeed'
 
 interface Props {
   initialData: InvitePage | null
@@ -54,6 +56,15 @@ export function InviteClientPage({ initialData, token }: Props) {
       )
     },
   })
+
+  // Initialize contactStore with currentGuest contact info
+  const contactStore = useContactStore()
+  useEffect(() => {
+    if (!page?.currentGuest) return
+    contactStore.setMyTelegram(page.currentGuest.telegram ?? '')
+    contactStore.setMyPhone(page.currentGuest.phone ?? '')
+    useContactStore.setState({ isShared: page.currentGuest.isContactShared })
+  }, [page?.currentGuest?.telegram, page?.currentGuest?.phone, page?.currentGuest?.isContactShared])
 
   // Sync currentGuest's RSVP status into guests array so RSVP→Attending re-shows the guest
   useEffect(() => {
@@ -145,7 +156,7 @@ export function InviteClientPage({ initialData, token }: Props) {
       <InviteMap location={page.eventLocation} latitude={page.eventLatitude} longitude={page.eventLongitude} />
 
       {/* Guests */}
-      <InviteGuests guests={guests} currentGuestId={page.currentGuest.id} currentGuestCount={page.currentGuest.guestCount} />
+      <InviteGuests guests={guests} currentGuestId={page.currentGuest.id} currentGuestCount={page.currentGuest.guestCount} guestToken={token} />
 
       {/* Wishlist */}
       <InviteWishlist
@@ -153,6 +164,12 @@ export function InviteClientPage({ initialData, token }: Props) {
         eventId={page.eventId}
         currentGuestId={page.currentGuest.id}
         items={page.wishlistItems}
+      />
+
+      {/* Activity Feed */}
+      <InviteActivityFeed
+        eventId={page.eventId}
+        guests={guests}
       />
 
       {/* Footer */}

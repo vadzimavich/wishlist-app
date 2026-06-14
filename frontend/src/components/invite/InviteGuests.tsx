@@ -3,12 +3,15 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useSprings, useSpring, animated } from '@react-spring/web'
+import { Phone, MessageCircle, X } from 'lucide-react'
 import { GuestPublic } from '@/types'
+import { useContactStore } from '@/lib/stores/contactStore'
 
 interface Props {
   guests: GuestPublic[]
   currentGuestId: string
   currentGuestCount: number
+  guestToken: string
 }
 
 const MARGIN = 50
@@ -24,13 +27,16 @@ const nodeVariants = {
   visible: { scale: 1, opacity: 1, transition: { type: 'spring', damping: 14, stiffness: 220 } },
 }
 
-export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Props) {
+export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestToken }: Props) {
   const graphRef = useRef<HTMLDivElement>(null)
   const [springParams, setSpringParams] = useState({ tension: 170, friction: 26, mass: 1, minDistance: 110 })
   const [initialized, setInitialized] = useState(false)
   const draggedGuestIdRef = useRef<number | null>(null)
   const isDraggingRef = useRef(false)
+  const hasMovedRef = useRef(false)
   const homePositionsRef = useRef<{ x: number; y: number }[]>([])
+  const [contactPopupGuest, setContactPopupGuest] = useState<string | null>(null)
+  const contactStore = useContactStore()
 
   const visibleGuests = useMemo(() => guests.filter(g => g.rsvpStatus !== 'NotAttending'), [guests])
   const attending = useMemo(() => guests.filter(g => g.rsvpStatus === 'Attending').length, [guests])
@@ -116,6 +122,11 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
     return () => ro.disconnect()
   }, [allIds, orbitingGuests.length, centerGuest?.id])
 
+  // Fetch shared contacts on mount
+  useEffect(() => {
+    contactStore.fetchSharedContacts(guestToken)
+  }, [guestToken])
+
   // Update spring config when debug sliders change
   useEffect(() => {
     api.start(i => ({
@@ -132,7 +143,8 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
     const idx = orbitingGuests.findIndex(g => g.id === guestId)
     if (idx === -1) return
     draggedGuestIdRef.current = idx
-    isDraggingRef.current = true
+    isDraggingRef.current = false
+    hasMovedRef.current = false
     const el = graphRef.current
     if (el) {
       el.setPointerCapture(e.pointerId)
@@ -141,6 +153,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDraggingRef.current || draggedGuestIdRef.current === null) return
+    hasMovedRef.current = true
 
     const draggedIdx = draggedGuestIdRef.current
     const container = graphRef.current
@@ -194,6 +207,17 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
       }
     })
   }, [api, springs, springParams])
+
+  const getSharedContact = (guestId: string) => {
+    return contactStore.sharedContacts.find(sc => sc.guestId === guestId)
+  }
+
+  const handleContactClick = useCallback((guestId: string) => {
+    if (hasMovedRef.current) return // was a drag, not a click
+    const contact = getSharedContact(guestId)
+    if (!contact) return
+    setContactPopupGuest(prev => prev === guestId ? null : guestId)
+  }, [contactStore.sharedContacts])
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     if (!isDraggingRef.current) return
@@ -249,7 +273,8 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
       <div ref={graphRef} className="relative mx-auto w-full"
         style={{ maxWidth: '660px', height: 420 }}
         onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}>
+        onPointerUp={handlePointerUp}
+        onClick={(e) => { if (e.target === graphRef.current) setContactPopupGuest(null) }}>
         {initialized && (
           <motion.div variants={containerVariants} initial="hidden" whileInView="visible"
             viewport={{ once: true, margin: '-40px' }} className="relative w-full h-full">
@@ -258,6 +283,8 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
               const isAtt = guest.rsvpStatus === 'Attending'
               const bc = isAtt ? 'rgba(74,222,128,0.5)' : 'rgba(155,89,245,0.35)'
               const gl = isAtt ? 'rgba(74,222,128,0.15)' : 'rgba(155,89,245,0.08)'
+              const hasContact = guest.isContactShared
+              const isPopupOpen = contactPopupGuest === guest.id
 
               return (
                 <motion.div key={guest.id} variants={nodeVariants}>
@@ -268,19 +295,56 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
                       top: spring.y.to(y => `${y}px`),
                       transform: 'translate(-50%, -50%)',
                       touchAction: 'none',
-                      cursor: 'grab',
+                      cursor: hasContact ? 'pointer' : 'grab',
                     }}
-                    onPointerDown={(e: React.PointerEvent) => handlePointerDown(guest.id, e)}>
+                    onPointerDown={(e: React.PointerEvent) => handlePointerDown(guest.id, e)}
+                    onClick={() => hasContact && handleContactClick(guest.id)}>
                     <div className="flex flex-col items-center gap-1.5 pointer-events-none select-none">
-                      <div className="flex items-center justify-center rounded-full"
+                      <div className="flex items-center justify-center rounded-full relative"
                         style={{
                           width: 54, height: 54,
                           background: isAtt ? 'linear-gradient(135deg,rgba(74,222,128,0.25),rgba(74,222,128,0.08))' : 'linear-gradient(135deg,rgba(107,47,224,0.3),rgba(155,89,245,0.12))',
                           border: `2px solid ${bc}`, boxShadow: `0 0 12px ${gl}`,
                         }}>
                         <span className="text-lg sm:text-xl leading-none select-none">{guest.emoji || '🙂'}</span>
+                        {/* Contact indicator icon */}
+                        {hasContact && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-brand-violet/80
+                                          flex items-center justify-center shadow-lg">
+                            <Phone size={9} className="text-white" />
+                          </div>
+                        )}
                       </div>
-                      <span className="text-[11px] sm:text-xs font-medium text-center leading-tight text-brand-pearl/60">{guest.name}</span>
+                      <span className="text-[11px] sm:text-xs font-medium text-center leading-tight text-brand-pearl/60">
+                        {guest.name}
+                      </span>
+                      {/* Contact info popup inline */}
+                      {isPopupOpen && (() => {
+                        const contact = getSharedContact(guest.id)
+                        if (!contact) return null
+                        return (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            className="mt-1 px-2 py-1.5 rounded-lg bg-brand-deep/95 border border-brand-violet/20
+                                       shadow-xl backdrop-blur-sm min-w-[120px]"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            {contact.telegram && (
+                              <div className="flex items-center gap-1.5 text-[10px] text-brand-pearl/70">
+                                <MessageCircle size={10} className="text-sky-400" />
+                                {contact.telegram}
+                              </div>
+                            )}
+                            {contact.phone && (
+                              <div className="flex items-center gap-1.5 text-[10px] text-brand-pearl/70 mt-0.5">
+                                <Phone size={10} className="text-success" />
+                                {contact.phone}
+                              </div>
+                            )}
+                          </motion.div>
+                        )
+                      })()}
                     </div>
                   </animated.div>
                 </motion.div>
@@ -291,6 +355,8 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
               const isAtt = centerGuest.rsvpStatus === 'Attending'
               const bc = isAtt ? 'rgba(74,222,128,0.55)' : 'rgba(155,89,245,0.5)'
               const gl = isAtt ? 'rgba(74,222,128,0.2)' : 'rgba(155,89,245,0.12)'
+              const hasContact = centerGuest.isContactShared
+              const isPopupOpen = contactPopupGuest === centerGuest.id
               return (
                 <motion.div key={centerGuest.id} variants={nodeVariants}>
                   <animated.div style={{
@@ -299,19 +365,54 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount }: Prop
                     top: centerSpring.y.to(y => `${y}px`),
                     transform: 'translate(-50%, -50%)',
                     zIndex: 10,
-                  }}>
+                  }}
+                    onClick={() => hasContact && handleContactClick(centerGuest.id)}>
                     <div className="flex flex-col items-center gap-2 select-none">
-                      <div className="flex items-center justify-center rounded-full"
+                      <div className="flex items-center justify-center rounded-full relative"
                         style={{
                           width: 70, height: 70,
                           background: isAtt ? 'linear-gradient(135deg,rgba(74,222,128,0.3),rgba(74,222,128,0.1))' : 'linear-gradient(135deg,rgba(107,47,224,0.35),rgba(155,89,245,0.15))',
                           border: `2px solid ${bc}`, boxShadow: `0 0 0 2px rgba(155,89,245,0.5), 0 0 24px ${gl}`,
                         }}>
                         <span className="text-2xl sm:text-3xl leading-none select-none">{centerGuest.emoji || '🙂'}</span>
+                        {/* Contact indicator icon */}
+                        {hasContact && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-brand-violet/80
+                                          flex items-center justify-center shadow-lg">
+                            <Phone size={10} className="text-white" />
+                          </div>
+                        )}
                       </div>
                       <span className="text-sm sm:text-base font-semibold text-center leading-tight text-brand-pearl">
                         {centerGuest.name}<span className="text-brand-violet ml-1 text-[10px] font-normal">{currentGuestCount > 1 ? '(вы)' : '(ты)'}</span>
                       </span>
+                      {/* Contact info popup inline */}
+                      {isPopupOpen && (() => {
+                        const contact = getSharedContact(centerGuest.id)
+                        if (!contact) return null
+                        return (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            className="mt-1 px-2.5 py-1.5 rounded-lg bg-brand-deep/95 border border-brand-violet/20
+                                       shadow-xl backdrop-blur-sm min-w-[130px]"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            {contact.telegram && (
+                              <div className="flex items-center gap-1.5 text-[11px] text-brand-pearl/70">
+                                <MessageCircle size={11} className="text-sky-400" />
+                                {contact.telegram}
+                              </div>
+                            )}
+                            {contact.phone && (
+                              <div className="flex items-center gap-1.5 text-[11px] text-brand-pearl/70 mt-0.5">
+                                <Phone size={11} className="text-success" />
+                                {contact.phone}
+                              </div>
+                            )}
+                          </motion.div>
+                        )
+                      })()}
                     </div>
                   </animated.div>
                 </motion.div>

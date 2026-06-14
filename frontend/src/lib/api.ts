@@ -202,7 +202,8 @@ export const guestsApi = {
 
   getActivity: async (eventId: string, skip?: number, take?: number): Promise<ActivityEvent[]> => {
     const { data } = await axios.get(`${API_URL}/api/events/${eventId}/activity?skip=${skip ?? 0}&take=${take ?? 20}`)
-    return data.data
+    // API returns { data: { items: ActivityEventDto[], totalCount: number } }
+    return data.data.items
   },
 
   updateContact: async (token: string, telegram?: string, phone?: string): Promise<GuestSelf> => {
