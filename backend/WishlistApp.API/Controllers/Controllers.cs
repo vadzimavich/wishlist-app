@@ -193,10 +193,67 @@ public class GuestsController(IGuestService guestService, IWishlistHubService hu
         var pageDto = await guestService.GetInvitePageAsync(token);
         await hub.NotifyGuestRsvpUpdatedAsync(
             pageDto.EventId,
-            new GuestPublicDto(guest.Id, guest.Name, guest.Emoji, guest.RsvpStatus, guest.GuestCount, guest.Telegram, guest.Phone)
+            new GuestPublicDto(guest.Id, guest.Name, guest.Emoji, guest.RsvpStatus, guest.GuestCount,
+                guest.IsContactShared ? guest.Telegram : null,
+                guest.IsContactShared ? guest.Phone : null)
         );
 
         return ApiOk(guest);
+    }
+
+    // ── Contact Sharing ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Сохранить/обновить контактные данные гостя (Telegram, Phone).
+    /// </summary>
+    [HttpPost("{token}/contact")]
+    [AllowAnonymous]
+    public async Task<IActionResult> UpdateContact(string token, [FromBody] UpdateContactRequest request)
+    {
+        var guest = await guestService.UpdateContactAsync(token, request.Telegram, request.Phone);
+
+        // Уведомляем всех в группе события об обновлении контакта
+        var pageDto = await guestService.GetInvitePageAsync(token);
+        await hub.NotifyGuestContactUpdatedAsync(
+            pageDto.EventId,
+            new SharedContactDto(guest.Id, guest.Name, guest.Emoji,
+                guest.IsContactShared ? guest.Telegram : null,
+                guest.IsContactShared ? guest.Phone : null)
+        );
+
+        return ApiOk(guest);
+    }
+
+    /// <summary>
+    /// Включить/отключить передачу контактов другим гостям.
+    /// </summary>
+    [HttpPut("{token}/contact/share")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ToggleContactShare(string token, [FromBody] ShareContactRequest request)
+    {
+        var guest = await guestService.ToggleContactShareAsync(token, request.IsShared);
+
+        // Уведомляем всех в группе события об изменении настройки контактов
+        var pageDto = await guestService.GetInvitePageAsync(token);
+        await hub.NotifyGuestContactUpdatedAsync(
+            pageDto.EventId,
+            new SharedContactDto(guest.Id, guest.Name, guest.Emoji,
+                request.IsShared ? guest.Telegram : null,
+                request.IsShared ? guest.Phone : null)
+        );
+
+        return ApiOk(guest);
+    }
+
+    /// <summary>
+    /// Получить список контактов других гостей события, кто поделился.
+    /// </summary>
+    [HttpGet("{token}/contacts")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetSharedContacts(string token)
+    {
+        var contacts = await guestService.GetSharedContactsAsync(token);
+        return ApiOk(contacts);
     }
 }
 
@@ -258,5 +315,35 @@ public class ParserController(IParserService parserService) : ApiControllerBase
     {
         var result = await parserService.FetchProductMetaAsync(request.Url);
         return ApiOk(result);
+    }
+}
+
+// ─── ActivityController ─────────────────────────────────────────────────────
+
+[Authorize]
+[Route("api/events/{eventId}/activity")]
+public class ActivityController(IActivityService activityService) : ApiControllerBase
+{
+    /// <summary>
+    /// Paginated activity feed for an event, newest first.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetActivity(
+        Guid eventId,
+        [FromQuery] int skip = 0,
+        [FromQuery] int take = 20)
+    {
+        var feed = await activityService.GetActivityAsync(eventId, skip, take);
+        return ApiOk(feed);
+    }
+
+    /// <summary>
+    /// Activity summary — counts per action type for an event.
+    /// </summary>
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetSummary(Guid eventId)
+    {
+        var summary = await activityService.GetActivitySummaryAsync(eventId);
+        return ApiOk(summary);
     }
 }

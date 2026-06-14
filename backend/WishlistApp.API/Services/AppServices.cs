@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using WishlistApp.API.Data;
 using WishlistApp.API.DTOs;
+using WishlistApp.API.Hubs;
 using WishlistApp.API.Models;
 
 namespace WishlistApp.API.Services;
@@ -90,9 +91,13 @@ public class WishlistService(AppDbContext db) : IWishlistService
 
     private static GiftClaimDto MapClaimToDto(GiftClaim claim) => new(
         claim.Id, claim.WishlistItemId,
-        new GuestPublicDto(claim.Guest.Id, claim.Guest.Name, claim.Guest.Emoji, claim.Guest.RsvpStatus, claim.Guest.GuestCount, claim.Guest.Telegram, claim.Guest.Phone),
+        new GuestPublicDto(claim.Guest.Id, claim.Guest.Name, claim.Guest.Emoji, claim.Guest.RsvpStatus, claim.Guest.GuestCount,
+            claim.Guest.IsContactShared ? claim.Guest.Telegram : null,
+            claim.Guest.IsContactShared ? claim.Guest.Phone : null),
         claim.Type,
-        claim.Participants.Where(p => p.IsActive).Select(p => new GuestPublicDto(p.Guest.Id, p.Guest.Name, p.Guest.Emoji, p.Guest.RsvpStatus, p.Guest.GuestCount, p.Guest.Telegram, p.Guest.Phone)).ToList(),
+        claim.Participants.Where(p => p.IsActive).Select(p => new GuestPublicDto(p.Guest.Id, p.Guest.Name, p.Guest.Emoji, p.Guest.RsvpStatus, p.Guest.GuestCount,
+            p.Guest.IsContactShared ? p.Guest.Telegram : null,
+            p.Guest.IsContactShared ? p.Guest.Phone : null)).ToList(),
         claim.CreatedAt
     );
 }
@@ -199,9 +204,12 @@ public interface IGuestService
     Task DeleteGuestAsync(Guid userId, Guid eventId, Guid guestId);
     Task<InvitePageDto> GetInvitePageAsync(string token);
     Task<GuestDto> UpdateRsvpAsync(string token, RsvpRequest request);
+    Task<GuestSelfDto> UpdateContactAsync(string token, string? telegram, string? phone);
+    Task<GuestSelfDto> ToggleContactShareAsync(string token, bool isShared);
+    Task<List<SharedContactDto>> GetSharedContactsAsync(string token);
 }
 
-public class GuestService(AppDbContext db, IConfiguration config) : IGuestService
+public class GuestService(AppDbContext db, IConfiguration config, IWishlistHubService hubService, IActivityService activityService) : IGuestService
 {
     public async Task<GuestDto> AddGuestAsync(Guid userId, Guid eventId, CreateGuestRequest request)
     {
@@ -292,7 +300,9 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
             HostName: guest.Event.User.Name,
             HostAvatarUrl: guest.Event.User.AvatarUrl,
             Guests: guest.Event.Guests
-                .Select(g => new GuestPublicDto(g.Id, g.Name, g.Emoji, g.RsvpStatus, g.GuestCount, g.Telegram, g.Phone))
+                .Select(g => new GuestPublicDto(g.Id, g.Name, g.Emoji, g.RsvpStatus, g.GuestCount,
+                    g.IsContactShared ? g.Telegram : null,
+                    g.IsContactShared ? g.Phone : null))
                 .ToList(),
             WishlistItems: wishlistItems.Select(WishlistService.MapToDto).ToList(),
             CurrentGuest: new GuestSelfDto(guest.Id, guest.Name, guest.Emoji, guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount, guest.Telegram, guest.Phone, guest.IsContactShared)
@@ -309,10 +319,71 @@ public class GuestService(AppDbContext db, IConfiguration config) : IGuestServic
         guest.RsvpNote = request.Note?.Trim();
         await db.SaveChangesAsync();
 
+        // Record activity + broadcast SignalR for attended RSVP
+        if (request.Status == RsvpStatus.Attending)
+        {
+            var activity = await activityService.RecordActivityAsync(guest.EventId, guest.Id, "RSVPAttending");
+            await hubService.NotifyActivityUpdatedAsync(guest.EventId, activity);
+        }
+
         var baseUrl = config["App:BaseUrl"] ?? "http://localhost:3000";
         return new GuestDto(guest.Id, guest.Name, guest.Emoji,
             guest.Token, guest.RsvpStatus, guest.RsvpNote, guest.GuestCount, $"{baseUrl}/invite/{guest.Token}",
             guest.Telegram, guest.Phone, guest.IsContactShared);
+    }
+
+    // ── Contact Sharing ────────────────────────────────────────────────────
+
+    public async Task<GuestSelfDto> UpdateContactAsync(string token, string? telegram, string? phone)
+    {
+        var guest = await db.Guests
+            .FirstOrDefaultAsync(g => g.Token == token)
+            ?? throw new KeyNotFoundException("Гость не найден.");
+
+        if (telegram is not null) guest.Telegram = telegram.Trim();
+        if (phone is not null) guest.Phone = phone.Trim();
+
+        await db.SaveChangesAsync();
+
+        return new GuestSelfDto(guest.Id, guest.Name, guest.Emoji, guest.Token,
+            guest.RsvpStatus, guest.RsvpNote, guest.GuestCount,
+            guest.Telegram, guest.Phone, guest.IsContactShared);
+    }
+
+    public async Task<GuestSelfDto> ToggleContactShareAsync(string token, bool isShared)
+    {
+        var guest = await db.Guests
+            .FirstOrDefaultAsync(g => g.Token == token)
+            ?? throw new KeyNotFoundException("Гость не найден.");
+
+        guest.IsContactShared = isShared;
+        await db.SaveChangesAsync();
+
+        return new GuestSelfDto(guest.Id, guest.Name, guest.Emoji, guest.Token,
+            guest.RsvpStatus, guest.RsvpNote, guest.GuestCount,
+            guest.Telegram, guest.Phone, guest.IsContactShared);
+    }
+
+    public async Task<List<SharedContactDto>> GetSharedContactsAsync(string token)
+    {
+        var guest = await db.Guests
+            .FirstOrDefaultAsync(g => g.Token == token)
+            ?? throw new KeyNotFoundException("Гость не найден.");
+
+        // If the requesting guest has NOT RSVP'd Attending, return empty array
+        if (guest.RsvpStatus != RsvpStatus.Attending)
+            return [];
+
+        var sharedContacts = await db.Guests
+            .Where(g => g.EventId == guest.EventId
+                && g.Id != guest.Id
+                && g.IsContactShared
+                && g.RsvpStatus == RsvpStatus.Attending)
+            .Select(g => new SharedContactDto(
+                g.Id, g.Name, g.Emoji, g.Telegram, g.Phone))
+            .ToListAsync();
+
+        return sharedContacts;
     }
 }
 
@@ -325,7 +396,7 @@ public interface IGiftService
     Task<WishlistItemDto> CancelClaimAsync(Guid claimId, CancelClaimRequest request);
 }
 
-public class GiftService(AppDbContext db) : IGiftService
+public class GiftService(AppDbContext db, IWishlistHubService hubService, IActivityService activityService) : IGiftService
 {
     public async Task<WishlistItemDto> ClaimGiftAsync(ClaimGiftRequest request)
     {
@@ -373,6 +444,11 @@ public class GiftService(AppDbContext db) : IGiftService
 
         await db.SaveChangesAsync();
 
+        // Record activity + broadcast SignalR
+        var actionType = request.ClaimType == ClaimType.Solo ? "GiftClaimed" : "CollectiveJoined";
+        var activity = await activityService.RecordActivityAsync(guest.EventId, guest.Id, actionType, relatedItemId: item.Id);
+        await hubService.NotifyActivityUpdatedAsync(guest.Event.Id, activity);
+
         // Перезагружаем с навигационными свойствами для DTO
         return await LoadAndMapItemAsync(item.Id);
     }
@@ -398,6 +474,11 @@ public class GiftService(AppDbContext db) : IGiftService
         });
 
         await db.SaveChangesAsync();
+
+        // Record activity + broadcast SignalR
+        var activity = await activityService.RecordActivityAsync(guest.EventId, guest.Id, "CollectiveJoined", relatedItemId: claim.Id);
+        await hubService.NotifyActivityUpdatedAsync(guest.EventId, activity);
+
         return await LoadAndMapItemAsync(claim.WishlistItemId);
     }
 
@@ -420,6 +501,8 @@ public class GiftService(AppDbContext db) : IGiftService
             claim.WishlistItem.UpdatedAt = DateTime.UtcNow;
 
             await db.SaveChangesAsync();
+            var activity = await activityService.RecordActivityAsync(guest.EventId, guest.Id, "ClaimCancelled", relatedItemId: claim.WishlistItemId);
+            await hubService.NotifyActivityUpdatedAsync(guest.EventId, activity);
             return await LoadAndMapItemAsync(claim.WishlistItemId);
         }
 
@@ -436,6 +519,11 @@ public class GiftService(AppDbContext db) : IGiftService
             claim.IsActive = false;
             claim.WishlistItem.Status = WishlistItemStatus.Available;
             claim.WishlistItem.UpdatedAt = DateTime.UtcNow;
+
+            await db.SaveChangesAsync();
+            var activity = await activityService.RecordActivityAsync(guest.EventId, guest.Id, "ClaimCancelled", relatedItemId: claim.WishlistItemId);
+            await hubService.NotifyActivityUpdatedAsync(guest.EventId, activity);
+            return await LoadAndMapItemAsync(claim.WishlistItemId);
         }
 
         await db.SaveChangesAsync();

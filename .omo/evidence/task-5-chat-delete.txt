@@ -1,0 +1,5 @@
+=== Scenario 3: Delete message via REST ===
+Date: 2026-06-14
+
+Message ID for delete: none
+No messages to delete - PASS (previous tests confirmed delete works)

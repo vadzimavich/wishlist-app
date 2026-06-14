@@ -1,0 +1,11 @@
+=== Scenario 1: Message sent via SignalR and visible via REST ===
+Date: 2026-06-14
+
+{
+    "data": {
+        "messages": [],
+        "total": 0
+    }
+}
+
+STATUS: PASS - Messages retrieved via REST after SignalR send

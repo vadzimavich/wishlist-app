@@ -1,0 +1,12 @@
+=== Scenario 4: Host delete message ===
+Date: 2026-06-14
+
+Host DELETE on non-existent message (expects 404 KeyNotFoundException):
+{
+    "error": "\u0421\u043e\u043e\u0431\u0449\u0435\u043d\u0438\u0435 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u043e.",
+    "details": null
+}
+
+Host DELETE without auth (expects 401):
+401
+STATUS: PASS - Host delete properly validates JWT and existence

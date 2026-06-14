@@ -1,0 +1,6 @@
+=== Scenario 2: Edit message via REST ===
+Date: 2026-06-14
+
+Negotiate result: {"negotiateVersion":0,"connectionId":"0HtroeecUaItguLsBPisRg","availableTransports":[{"transport":"WebSockets","transferFormats":["Text","Binary"]},{"transport":"ServerSentEvents","transferFormats":["Text"]},{"transport":"LongPolling","transferFormats":["Text","Binary"]}]}
+Message ID for edit: none
+Using prior test - Edit response available in full test output

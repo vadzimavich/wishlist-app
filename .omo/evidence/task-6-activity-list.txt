@@ -1,0 +1,10 @@
+=== QA Scenario: Activity persists across requests ===
+
+1. GET /api/events/{eventId}/activity
+Response: {"data":{"items":[{"id":"aeeb912b-...","eventId":"e0f2f277-...","guestId":"ec5ea04d-...","actionType":"GiftClaimed","relatedItemId":"a6b72304-...","metadata":null,"createdAt":"2026-06-14T20:59:34.004753Z"},{"id":"fbeef927-...","eventId":"e0f2f277-...","guestId":"ec5ea04d-...","actionType":"RSVPAttending","relatedItemId":null,"metadata":null,"createdAt":"2026-06-14T20:59:14.403916Z"}],"totalCount":2},"message":null}
+
+2. Assert response is array with valid entries → PASS (2 items, ordered by CreatedAt DESC)
+
+3. GET /api/events/{eventId}/activity/summary
+Response: {"data":[{"actionType":"GiftClaimed","count":1},{"actionType":"RSVPAttending","count":1}],"message":null}
+→ PASS (summary groups correctly)

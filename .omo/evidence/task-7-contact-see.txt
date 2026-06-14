@@ -1,0 +1,103 @@
+===========================================================
+QA Evidence: Task 7 - Guest Contact Sharing (Scenario 2)
+===========================================================
+
+Scenario: Other guest sees shared contacts
+  Steps:
+    1. GET /api/guests/{tokenB}/contacts (Guest B in same event)
+    2. Assert response includes Guest A's telegram
+
+Edge Cases Verified:
+  - Non-attending guest receives empty array
+  - Requesting guest excluded from results
+
+===========================================================
+Step 1: GET shared contacts from Guest B's perspective
+-----------------------------------------------------------
+GET http://localhost:5000/api/guests/13a0e98b5b9d4f4fae5a9bae2da24003/contacts
+
+Result (200 OK):
+{"data":[{"guestId":"38eb0b74-1571-4ba7-ba45-55c018f2238e","name":"Guest A","emoji":"🎉","telegram":"@guest_a_user","phone":"+1234567890"}],"message":null}
+
+Validation: Guest B sees Guest A's telegram="@guest_a_user" ✓
+Validation: Guest B sees Guest A's phone="+1234567890" ✓
+Validation: Guest A is excluded from Guest B's view (only 2 guests, A shared) ✓
+
+===========================================================
+Edge: Non-attending guest gets empty array
+-----------------------------------------------------------
+POST guest A to NotAttending, then GET contacts:
+
+GET http://localhost:5000/api/guests/61a54ea9200e4e52bffc1400670b4d6b/contacts
+
+Result (200 OK):
+{"data":[],"message":null}
+
+Validation: NotAttending guest receives empty array ✓
+
+===========================================================
+Supplementary QA (Oracle Review)
+===========================================================
+
+Test 1: 404 on invalid token (POST /contact)
+-----------------------------------------------------------
+POST http://localhost:5000/api/guests/INVALID_TOKEN/contact
+Body: {"telegram":"@test"}
+
+Result:
+{"error":"Гость не найден.","details":null}
+HTTP_STATUS: 404
+
+Validation: Invalid token returns 404 ✓
+
+Test 2: 404 on invalid token (PUT /contact/share)
+-----------------------------------------------------------
+PUT http://localhost:5000/api/guests/INVALID_TOKEN/contact/share
+Body: {"isShared":true}
+
+Result:
+{"error":"Гость не найден.","details":null}
+HTTP_STATUS: 404
+
+Validation: Invalid token returns 404 ✓
+
+Test 3: 404 on invalid token (GET /contacts)
+-----------------------------------------------------------
+GET http://localhost:5000/api/guests/INVALID_TOKEN/contacts
+
+Result:
+{"error":"Гость не найден.","details":null}
+HTTP_STATUS: 404
+
+Validation: Invalid token returns 404 ✓
+
+Test 4: Toggle share OFF, verify contacts disappear
+-----------------------------------------------------------
+PUT http://localhost:5000/api/guests/{guestA}/contact/share Body: {"isShared":false}
+  → 200, isContactShared=false
+
+GET http://localhost:5000/api/guests/{guestB}/contacts
+  → {"data":[],"message":null}
+
+PUT http://localhost:5000/api/guests/{guestA}/contact/share Body: {"isShared":true}
+  → 200, isContactShared=true
+
+Validation: Toggle OFF removes guest from shared contacts list ✓
+Validation: Toggle ON restores visibility ✓
+
+Test 5: Partial update (telegram only, phone unchanged)
+-----------------------------------------------------------
+POST http://localhost:5000/api/guests/{guestA}/contact
+Body: {"telegram":"@new_telegram_only"}
+
+Result (200):
+{"data":{"telegram":"@new_telegram_only","phone":"+1234567890","isContactShared":true,...}}
+
+GET http://localhost:5000/api/guests/{guestB}/contacts
+→ Guest A visible with telegram="@new_telegram_only", phone="+1234567890"
+
+Validation: Partial update leaves omitted field unchanged ✓
+
+===========================================================
+ALL ASSERTIONS PASSED ✓
+===========================================================

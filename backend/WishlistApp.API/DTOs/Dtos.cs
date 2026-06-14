@@ -107,6 +107,25 @@ public record UpdateEventRequest(
     bool? IsActive
 );
 
+// ─── Contact Sharing ──────────────────────────────────────────────────────────
+
+public record UpdateContactRequest(
+    [MaxLength(100)] string? Telegram,
+    [MaxLength(30), Phone] string? Phone
+);
+
+public record ShareContactRequest(
+    bool IsShared
+);
+
+public record SharedContactDto(
+    Guid GuestId,
+    string Name,
+    string Emoji,
+    string? Telegram,
+    string? Phone
+);
+
 // ─── Guest ────────────────────────────────────────────────────────────────────
 
 public record GuestDto(
@@ -244,4 +263,14 @@ public record ActivityEventDto(
     Guid? RelatedItemId,
     string? Metadata,
     DateTime CreatedAt
+);
+
+public record ActivityFeedDto(
+    List<ActivityEventDto> Items,
+    int TotalCount
+);
+
+public record ActivitySummaryItemDto(
+    string ActionType,
+    int Count
 );

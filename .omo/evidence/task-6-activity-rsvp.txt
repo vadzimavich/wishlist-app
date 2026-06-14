@@ -1,0 +1,9 @@
+=== QA Scenario: RSVP triggers activity event ===
+
+1. POST /api/guests/{token}/rsvp body: { "status": "Attending" }
+Response: {"data":{"id":"ec5ea04d-95b8-40d5-a8cc-b7aa6e10eb50","name":"Test Guest",...,"rsvpStatus":"Attending",...},"message":null}
+
+2. GET /api/events/{eventId}/activity
+Response: {"data":{"items":[{"id":"fbeef927-...","eventId":"e0f2f277-...","guestId":"ec5ea04d-...","actionType":"RSVPAttending","relatedItemId":null,"metadata":null,"createdAt":"2026-06-14T20:59:14.403916Z"}],"totalCount":1},"message":null}
+
+3. Assert actionType "RSVPAttending" in response → PASS

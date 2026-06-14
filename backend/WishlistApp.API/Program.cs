@@ -27,8 +27,11 @@ services.AddScoped<IWishlistService, WishlistService>();
 services.AddScoped<IEventService, EventService>();
 services.AddScoped<IGuestService, GuestService>();
 services.AddScoped<IGiftService, GiftService>();
+services.AddScoped<IActivityService, ActivityService>();
 services.AddScoped<IParserService, ParserService>();
+services.AddScoped<IActivityService, ActivityService>();
 services.AddSingleton<IWishlistHubService, WishlistHubService>();
+services.AddScoped<IChatService, ChatService>();
 
 // HttpClient для парсера с нормальным User-Agent
 services.AddHttpClient("Parser", client =>
@@ -153,6 +156,7 @@ app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.MapControllers();
 app.MapHub<WishlistHub>("/hubs/wishlist");
+app.MapHub<ChatHub>("/hubs/chat");
 
 // Health check для Render keep-alive
 app.MapGet("/health", () => Results.Ok(new { status = "ok", timestamp = DateTime.UtcNow }));

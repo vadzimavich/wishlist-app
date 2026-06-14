@@ -43,7 +43,9 @@ public class WishlistHub : Hub
     // connection.on('CollectiveJoined', (item: WishlistItemDto) => {...})
     // connection.on('ClaimCancelled', (item: WishlistItemDto) => {...})
     // connection.on('GuestRsvpUpdated', (guest: GuestPublicDto) => {...})
+    // connection.on('GuestContactUpdated', (contact: SharedContactDto) => {...})
     // connection.on('WishlistItemUpdated', (item: WishlistItemDto) => {...})
+    // connection.on('ActivityUpdated', (activity: ActivityEventDto) => {...})
 }
 
 /// <summary>
@@ -55,7 +57,9 @@ public interface IWishlistHubService
     Task NotifyCollectiveJoinedAsync(Guid eventId, WishlistItemDto item);
     Task NotifyClaimCancelledAsync(Guid eventId, WishlistItemDto item);
     Task NotifyGuestRsvpUpdatedAsync(Guid eventId, GuestPublicDto guest);
+    Task NotifyGuestContactUpdatedAsync(Guid eventId, SharedContactDto contact);
     Task NotifyWishlistItemUpdatedAsync(Guid eventId, WishlistItemDto item);
+    Task NotifyActivityUpdatedAsync(Guid eventId, ActivityEventDto activity);
 }
 
 public class WishlistHubService(IHubContext<WishlistHub> hubContext) : IWishlistHubService
@@ -74,6 +78,12 @@ public class WishlistHubService(IHubContext<WishlistHub> hubContext) : IWishlist
     public Task NotifyGuestRsvpUpdatedAsync(Guid eventId, GuestPublicDto guest) =>
         hubContext.Clients.Group(GroupName(eventId)).SendAsync("GuestRsvpUpdated", guest);
 
+    public Task NotifyGuestContactUpdatedAsync(Guid eventId, SharedContactDto contact) =>
+        hubContext.Clients.Group(GroupName(eventId)).SendAsync("GuestContactUpdated", contact);
+
     public Task NotifyWishlistItemUpdatedAsync(Guid eventId, WishlistItemDto item) =>
         hubContext.Clients.Group(GroupName(eventId)).SendAsync("WishlistItemUpdated", item);
+
+    public Task NotifyActivityUpdatedAsync(Guid eventId, ActivityEventDto activity) =>
+        hubContext.Clients.Group(GroupName(eventId)).SendAsync("ActivityUpdated", activity);
 }

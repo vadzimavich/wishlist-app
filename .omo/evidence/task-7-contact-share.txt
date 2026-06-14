@@ -1,0 +1,36 @@
+===========================================================
+QA Evidence: Task 7 - Guest Contact Sharing (Scenario 1)
+===========================================================
+
+Scenario: Guest shares contact
+  Steps:
+    1. POST /api/guests/{token}/contact body: { telegram: "@username" }
+    2. Assert 200
+    3. PUT /api/guests/{token}/contact/share body: { isShared: true }
+    4. Assert 200
+
+===========================================================
+Step 1: POST save contact for guest
+-----------------------------------------------------------
+POST http://localhost:5000/api/guests/61a54ea9200e4e52bffc1400670b4d6b/contact
+Body: {"telegram":"@guest_a_user","phone":"+1234567890"}
+
+Result (200 OK):
+{"data":{"id":"38eb0b74-1571-4ba7-ba45-55c018f2238e","name":"Guest A","emoji":"🎉","token":"61a54ea9200e4e52bffc1400670b4d6b","rsvpStatus":"Attending","rsvpNote":"Will be there!","guestCount":1,"telegram":"@guest_a_user","phone":"+1234567890","isContactShared":false},"message":null}
+
+Validation: telegram="@guest_a_user", phone="+1234567890" ✓
+
+===========================================================
+Step 2: PUT toggle contact share
+-----------------------------------------------------------
+PUT http://localhost:5000/api/guests/61a54ea9200e4e52bffc1400670b4d6b/contact/share
+Body: {"isShared":true}
+
+Result (200 OK):
+{"data":{"id":"38eb0b74-1571-4ba7-ba45-55c018f2238e","name":"Guest A","emoji":"🎉","token":"61a54ea9200e4e52bffc1400670b4d6b","rsvpStatus":"Attending","rsvpNote":"Will be there!","guestCount":1,"telegram":"@guest_a_user","phone":"+1234567890","isContactShared":true},"message":null}
+
+Validation: isContactShared=true ✓
+
+===========================================================
+ALL ASSERTIONS PASSED ✓
+===========================================================
