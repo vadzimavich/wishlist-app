@@ -21,6 +21,7 @@ interface Props {
   guestToken: string
   currentGuestId: string
   collectives?: CollectiveChatInfo[]
+  openToClaimId?: string | null
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -56,7 +57,7 @@ function formatTime(iso: string): string {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function InviteChat({ eventId, guestToken, currentGuestId, collectives = [] }: Props) {
+export function InviteChat({ eventId, guestToken, currentGuestId, collectives = [], openToClaimId }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'event' | 'collectives' | 'collective-chat'>('event')
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null)
@@ -71,6 +72,7 @@ export function InviteChat({ eventId, guestToken, currentGuestId, collectives = 
   const inputRef = useRef<HTMLInputElement>(null)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevMessageCountRef = useRef(0)
+  const prevOpenClaimIdRef = useRef<string | null>(null)
 
   // Determine active claimId for the chat hook
   const currentClaimId = activeTab === 'collective-chat' ? selectedClaimId : undefined
@@ -123,6 +125,17 @@ export function InviteChat({ eventId, guestToken, currentGuestId, collectives = 
       inputRef.current?.focus()
     }
   }, [editingMessageId])
+
+  // Open chat to a specific collective when triggered externally (from wishlist modal)
+  useEffect(() => {
+    if (openToClaimId && openToClaimId !== prevOpenClaimIdRef.current) {
+      prevOpenClaimIdRef.current = openToClaimId
+      setSelectedClaimId(openToClaimId)
+      setActiveTab('collective-chat')
+      setIsOpen(true)
+      loadMessages(eventId, openToClaimId, 0, 50)
+    }
+  }, [openToClaimId, eventId, loadMessages])
 
   const handleSend = useCallback(async () => {
     const text = inputText.trim()

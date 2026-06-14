@@ -511,3 +511,33 @@
 
 ### Evidence
 - TypeScript: `tsc --noEmit` passes with 0 errors
+
+## 2026-06-15 — Task 19: Wire InviteChat + InviteActivityFeed into InviteClientPage
+
+### Changes
+1. **frontend/src/components/invite/InviteClientPage.tsx** — Full integration:
+   - Added `useMemo`, `useCallback` to React imports + `dynamic` from `next/dynamic`
+   - Dynamic import for `InviteChat` (SSR disabled): `const InviteChat = dynamic(() => import('./InviteChat').then(m => m.InviteChat), { ssr: false })`
+   - Added `computedCollectives` `useMemo` deriving `{ claimId, itemName, participantCount }` from wishlist items where `status === 'Collective'` and `activeClaim` exists
+   - Added `chatOpenClaimId` state + `handleOpenCollectiveChat` callback (sets state to open chat panel to specific collective)
+   - Passed `onOpenCollectiveChat={handleOpenCollectiveChat}` to `InviteWishlist`
+   - Added `<InviteChat>` component with `eventId`, `guestToken`, `currentGuestId`, `collectives`, `openToClaimId` props
+   - `InviteActivityFeed` and `contactStore` initialization already existed from previous tasks
+
+2. **frontend/src/components/invite/InviteChat.tsx** — Added `openToClaimId` prop:
+   - Extended `Props` with `openToClaimId?: string | null`
+   - Added `prevOpenClaimIdRef` to detect changes
+   - Added `useEffect`: when `openToClaimId` changes to a new value, opens the chat panel, switches to `collective-chat` tab, and loads messages for that claim
+
+### Key Decisions
+- **Dynamic import for InviteChat**: Uses `next/dynamic` with `ssr: false` because the chat uses `window` for context menu positioning and SignalR connections
+- **`openToClaimId` dedup**: Uses `prevOpenClaimIdRef` to prevent re-opening on every render — only triggers when the value actually changes
+- **No additional SignalR wiring in orchestrator**: Each component (InviteChat, InviteActivityFeed, useWishlistRealtime) manages its own SignalR connections independently
+- **`computedCollectives` guards**: `filter(item => item.status === 'Collective' && item.activeClaim)` ensures we only pass collectives with valid claims
+
+### Files Modified
+1. `frontend/src/components/invite/InviteClientPage.tsx` — Full integration
+2. `frontend/src/components/invite/InviteChat.tsx` — Added `openToClaimId` prop + effect
+
+### Evidence
+- TypeScript: `tsc --noEmit` passes with 0 errors

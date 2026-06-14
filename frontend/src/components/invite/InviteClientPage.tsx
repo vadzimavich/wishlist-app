@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { useQuery } from '@tanstack/react-query'
 import { guestsApi } from '@/lib/api'
 import { InvitePage, GuestPublic } from '@/types'
@@ -14,6 +15,8 @@ import { InviteWishlist } from './InviteWishlist'
 import { InviteRsvpBar } from './InviteRsvpBar'
 import { useContactStore } from '@/lib/stores/contactStore'
 import { InviteActivityFeed } from './InviteActivityFeed'
+
+const InviteChat = dynamic(() => import('./InviteChat').then(m => m.InviteChat), { ssr: false })
 
 interface Props {
   initialData: InvitePage | null
@@ -77,6 +80,25 @@ export function InviteClientPage({ initialData, token }: Props) {
       )
     )
   }, [page?.currentGuest?.rsvpStatus])
+
+  // Chat: state for opening collective chat from wishlist modal
+  const [chatOpenClaimId, setChatOpenClaimId] = useState<string | null>(null)
+
+  const handleOpenCollectiveChat = useCallback((claimId: string) => {
+    setChatOpenClaimId(claimId)
+  }, [])
+
+  // Compute collectives from wishlist items where current guest is involved
+  const computedCollectives = useMemo(() => {
+    if (!page?.wishlistItems) return []
+    return page.wishlistItems
+      .filter(item => item.status === 'Collective' && item.activeClaim)
+      .map(item => ({
+        claimId: item.activeClaim!.id,
+        itemName: item.name,
+        participantCount: item.activeClaim!.participants.length,
+      }))
+  }, [page?.wishlistItems])
 
   // Lenis smooth scroll
   useEffect(() => {
@@ -164,12 +186,22 @@ export function InviteClientPage({ initialData, token }: Props) {
         eventId={page.eventId}
         currentGuestId={page.currentGuest.id}
         items={page.wishlistItems}
+        onOpenCollectiveChat={handleOpenCollectiveChat}
       />
 
       {/* Activity Feed */}
       <InviteActivityFeed
         eventId={page.eventId}
         guests={guests}
+      />
+
+      {/* Chat (floating bubble) */}
+      <InviteChat
+        eventId={page.eventId}
+        guestToken={token}
+        currentGuestId={page.currentGuest.id}
+        collectives={computedCollectives}
+        openToClaimId={chatOpenClaimId}
       />
 
       {/* Footer */}
