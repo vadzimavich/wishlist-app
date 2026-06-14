@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios'
 import {
+  ActivityEvent,
   AuthResponse,
   CreateEventForm,
   CreateGuestForm,
@@ -7,9 +8,11 @@ import {
   Event,
   GiftClaim,
   Guest,
+  GuestSelf,
   InvitePage,
   ParsedProduct,
   RsvpStatus,
+  SharedContact,
   UpdateGuestForm,
   WishlistItem,
   ClaimType,
@@ -194,6 +197,26 @@ export const guestsApi = {
 
   updateRsvp: async (token: string, status: RsvpStatus, note?: string): Promise<Guest> => {
     const { data } = await axios.post(`${API_URL}/api/guests/${token}/rsvp`, { status, note })
+    return data.data
+  },
+
+  getActivity: async (eventId: string, skip?: number, take?: number): Promise<ActivityEvent[]> => {
+    const { data } = await axios.get(`${API_URL}/api/events/${eventId}/activity?skip=${skip ?? 0}&take=${take ?? 20}`)
+    return data.data
+  },
+
+  updateContact: async (token: string, telegram?: string, phone?: string): Promise<GuestSelf> => {
+    const { data } = await axios.post(`${API_URL}/api/guests/${token}/contact`, { telegram, phone })
+    return data.data
+  },
+
+  toggleContactShare: async (token: string, isShared: boolean): Promise<GuestSelf> => {
+    const { data } = await axios.put(`${API_URL}/api/guests/${token}/contact/share`, { isShared })
+    return data.data
+  },
+
+  getSharedContacts: async (token: string): Promise<SharedContact[]> => {
+    const { data } = await axios.get(`${API_URL}/api/guests/${token}/contacts`)
     return data.data
   },
 }

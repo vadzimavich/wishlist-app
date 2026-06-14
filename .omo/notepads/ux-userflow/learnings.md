@@ -211,3 +211,91 @@
 - task-5-chat-edit.txt — REST PUT with editedAt verification
 - task-5-chat-delete.txt — REST DELETE + empty list verification
 - task-5-chat-host-delete.txt — Host DELETE endpoint + 401 without auth test
+
+## 2026-06-15 — Task 11: useContactStore + Contact API Integration
+
+### Changes
+1. **frontend/src/types/index.ts** — Extended `GuestSelf` with `telegram?`, `phone?`, `isContactShared` fields; added `SharedContact` interface
+2. **frontend/src/lib/api.ts** — Added 3 methods to `guestsApi`:
+   - `updateContact(token, telegram?, phone?)` → `POST /api/guests/{token}/contact`
+   - `toggleContactShare(token, isShared)` → `PUT /api/guests/{token}/contact/share`
+   - `getSharedContacts(token)` → `GET /api/guests/{token}/contacts`
+3. **frontend/src/lib/stores/contactStore.ts** — New Zustand store `useContactStore` with:
+   - State: `myTelegram`, `myPhone`, `isShared`, `sharedContacts`, `loading`
+   - Actions: `updateMyContact`, `toggleShare`, `fetchSharedContacts`, `setMyTelegram`, `setMyPhone`
+   - Lazy loading: no auto-fetch on mount (only on explicit `fetchSharedContacts` call)
+
+### Key Design Decisions
+- **Separate file**: Created `lib/stores/contactStore.ts` rather than adding to existing `lib/store.ts` — follows task spec and keeps contact logic independent
+- **Lazy fetch**: `fetchSharedContacts` is only called when consumer explicitly invokes it (e.g., when opening contact modal) — no automatic fetching on store creation
+- **No persist middleware**: Contact state is ephemeral (not persisted to localStorage) — differs from auth store which uses `persist`
+- **GuestSelf type extension**: Added `telegram?`, `phone?`, `isContactShared` as optional/boolean fields — backward compatible with existing usage
+- **axios direct calls**: Contact API uses `axios.post/put/get` directly (not the JWT-authenticated `api` instance) — follows the same pattern as existing guest token endpoints (`getInvitePage`, `updateRsvp`)
+
+### Files Modified
+1. `frontend/src/types/index.ts` — GuestSelf extended, SharedContact added
+2. `frontend/src/lib/api.ts` — 3 new methods in guestsApi
+
+### Files Created
+1. `frontend/src/lib/stores/contactStore.ts` — Contact Zustand store
+
+### Evidence
+- task-11-contact-store.txt — Build success + scenario verification
+
+## 2026-06-15 — Task 9 Frontend: useChatRealtime hook + chatStore
+
+### New Files Created
+1. **hooks/useChatRealtime.ts** — SignalR hook for `/hubs/chat` with:
+   - Connection URL: `${API_URL}/hubs/chat?eventId=${eventId}&guestToken=${guestToken}` + optional `&claimId=${claimId}`
+   - Auto-reconnect: `withAutomaticReconnect([0, 2000, 5000, 10000])`
+   - Hub methods: `sendEventMessage(text)`, `sendCollectiveMessage(claimId, text)`, `editMessage(messageId, newText)`, `deleteMessage(messageId)`
+   - Event handlers: `MessageReceived` → addMessage, `MessageEdited` → editMessage, `MessageDeleted` → removeMessage
+   - Returns: `{ sendEventMessage, sendCollectiveMessage, editMessage, deleteMessage, messages, loadMore, hasMore, loading }`
+   - Auto-loads messages on mount via `loadMessages(eventId, claimId, 0, 50)`
+   - Cleanup on unmount: `connection.stop()`
+
+2. **lib/stores/chatStore.ts** — Zustand store with:
+   - `messages: Record<string, ChatMessage[]>` (keyed by claimId or `__event__`)
+   - `loading: boolean`, `hasMore: Record<string, boolean>`
+   - Methods: `addMessage`, `editMessage`, `removeMessage`, `setMessages`, `setLoading`, `setHasMore`, `loadMessages`
+   - `loadMessages` calls `GET /api/events/{eventId}/messages?claimId=X&skip=0&take=50` via axios
+   - First-page (skip=0) replaces messages; subsequent pages append
+   - Duplicate prevention in `addMessage`
+
+### Existing Files Modified
+3. **types/index.ts** — Added `ChatMessage` interface: id, eventId, claimId?, guestId, guestName, guestEmoji, text, editedAt?, isDeleted, createdAt
+
+### Key Decisions
+- **Separate store file**: Created `lib/stores/chatStore.ts` (new `stores/` subdirectory) to keep chat state isolated from the existing combined `lib/store.ts`
+- **Key scheme**: `'__event__'` for event-wide chat, claimId string for collective chat — matches the backend's group naming (`event-chat-{eventId}`, `collective-chat-{claimId}`)
+- **Soft-remove**: `removeMessage` filters the message out of the array entirely (consistent with backend's soft-delete + filtered GET)
+- **API response flexibility**: `loadMessages` handles both `{ data: [...] }` envelope and raw array formats
+- **TypeScript**: zero errors on `tsc --noEmit`
+
+## 2026-06-15 — Task 10 Frontend: useActivityFeed hook + activityStore
+
+### New Files Created
+1. **hooks/useActivityFeed.ts** — Hook for fetching activity + listening to SignalR `ActivityUpdated`:
+   - Takes `eventId: string | undefined`
+   - On mount: calls `GET /api/events/{eventId}/activity?skip=0&take=20` via `guestsApi.getActivity()`
+   - Stores results in `activityStore`
+   - `loadMore()`: fetches next page (skip = current length, take = 20), appends to store
+   - SignalR connection: creates separate WishlistHub connection at `/hubs/wishlist?eventId=${eventId}` (reuses existing hub, not a new hub)
+   - Listens to `ActivityUpdated` event → calls `addActivity()` on store (prepends with duplicate prevention)
+   - Returns: `{ activities, loadMore, hasMore, loading }`
+
+2. **lib/stores/activityStore.ts** — Zustand store with:
+   - `activities: ActivityEvent[]`, `loading: boolean`, `hasMore: boolean`
+   - `addActivity(event)`: prepends with duplicate check by id
+   - `setActivities(events, hasMore?)`: replaces list
+   - `setLoading(loading)`: loading state toggle
+
+### Existing Files Modified
+3. **types/index.ts** — Added `ActivityEvent` interface + `ActivityActionType` union type
+4. **lib/api.ts** — Added `getActivity(eventId, skip?, take?)` to `guestsApi`
+
+### Key Decisions
+- **Separate SignalR connection**: Rather than trying to access the internal `connectionRef` from `useWishlistRealtime`, created a new connection to the same `/hubs/wishlist` endpoint. This keeps the activity feed self-contained and doesn't require modifying existing hooks.
+- **`addActivity` dedup**: The store checks `id` before prepending to avoid duplicates from SignalR events arriving before the initial load completes.
+- **`useActivityStore.getState().activities` in loadMore**: Used to get the latest activities from outside the hook's closure, ensuring the merge is correct even if SignalR events arrived between renders.
+- **Same page size (20) and connection config** as `useWishlistRealtime` for consistency.

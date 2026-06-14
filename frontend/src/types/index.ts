@@ -99,6 +99,17 @@ export interface GuestSelf {
   guestCount: number
   rsvpStatus: RsvpStatus
   rsvpNote: string | null
+  telegram?: string | null
+  phone?: string | null
+  isContactShared: boolean
+}
+
+export interface SharedContact {
+  guestId: string
+  name: string
+  emoji: string
+  telegram?: string | null
+  phone?: string | null
 }
 
 export interface InvitePage {
@@ -168,4 +179,39 @@ export interface UpdateGuestForm {
   name: string
   emoji?: string
   guestCount?: number
+}
+
+// ─── Chat ──────────────────────────────────────────────────────────────────────
+
+export interface ChatMessage {
+  id: string
+  eventId: string
+  claimId: string | null
+  guestId: string
+  guestName: string
+  guestEmoji: string
+  text: string
+  editedAt: string | null
+  isDeleted: boolean
+  createdAt: string
+}
+
+// ─── Activity Feed ────────────────────────────────────────────────────────────
+
+export type ActivityActionType =
+  | 'RSVPAttending'
+  | 'RSVPNotAttending'
+  | 'GiftClaimed'
+  | 'CollectiveJoined'
+  | 'GiftPurchased'
+  | 'MessageSent'
+
+export interface ActivityEvent {
+  id: string
+  eventId: string
+  guestId?: string | null
+  actionType: ActivityActionType
+  relatedItemId?: string | null
+  metadata?: string | null
+  createdAt: string
 }
