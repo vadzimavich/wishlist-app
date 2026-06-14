@@ -207,6 +207,62 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items, onO
         </p>
       </div>
 
+      {/* Progress Summary Bar */}
+      {(() => {
+        const total = items.length
+        const chosen = items.filter(i => i.status !== 'Available').length
+        const collective = items.filter(i => i.status === 'Collective').length
+        const purchased = items.filter(i => i.status === 'Purchased').length
+        const pct = total > 0 ? Math.round((chosen / total) * 100) : 0
+
+        // SVG progress ring params
+        const r = 20
+        const circ = 2 * Math.PI * r
+        const offset = circ - (pct / 100) * circ
+
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="liquid-glass p-4 mb-4 flex items-center gap-4"
+          >
+            <div className="relative shrink-0">
+              <svg width="52" height="52" className="-rotate-90">
+                <defs>
+                  <linearGradient id="progress-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#9B59F5" />
+                    <stop offset="100%" stopColor="#F5D88A" />
+                  </linearGradient>
+                </defs>
+                <circle cx="26" cy="26" r={r} fill="none"
+                  stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
+                <motion.circle cx="26" cy="26" r={r} fill="none"
+                  stroke="url(#progress-grad)" strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeDasharray={circ}
+                  initial={{ strokeDashoffset: circ }}
+                  animate={{ strokeDashoffset: offset }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-brand-pearl">
+                {pct}%
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-brand-pearl text-sm font-medium">
+                {chosen} из {total} выбрано
+              </p>
+              <p className="text-brand-pearl/40 text-xs mt-0.5">
+                {collective > 0 && `${collective} в сборе`}
+                {collective > 0 && purchased > 0 && ' · '}
+                {purchased > 0 && `${purchased} куплен${purchased > 1 ? 'ы' : ''}`}
+              </p>
+            </div>
+          </motion.div>
+        )
+      })()}
+
       <div className="space-y-3">
         {sortedItems.map(item => {
           const status = STATUS_CONFIG[item.status] ?? DEFAULT_STATUS

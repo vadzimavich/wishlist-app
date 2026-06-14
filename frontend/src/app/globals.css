@@ -259,6 +259,16 @@ body {
   animation: gradient-sweep 12s ease infinite;
 }
 
+/* ─── Glow Pulse Animation ──────────────────────────────────────────────── */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 5px rgba(34,197,94,0.3); }
+  50% { box-shadow: 0 0 20px rgba(34,197,94,0.6); }
+}
+
+.glow-pulse {
+  animation: glow-pulse 2s ease-in-out 3;
+}
+
 /* ─── Reduced motion ─────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

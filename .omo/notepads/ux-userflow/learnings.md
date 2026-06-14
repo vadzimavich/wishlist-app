@@ -447,3 +447,67 @@
 - `tsc --noEmit`: 0 errors
 - `next build`: 0 errors, all routes generated
 - Manual QA required: browser testing of modal flow, contact icon display, popover interaction
+
+## 2026-06-15 — Task 16: Confetti Burst + RSVP Badge Animation
+
+### Changes
+1. **InviteRsvpBar.tsx**:
+   - Added `import confetti from 'canvas-confetti'`
+   - In `rsvpMutation.onSuccess`, when `pendingStatus === 'Attending'`:
+     - Fires canvas-confetti burst from both sides (angle 60/120, spread 55, origin y 0.7)
+     - Colors: brand violet (#9B59F5), champagne (#F5D88A), success green (#22C55E)
+     - Runs for 1500ms via `requestAnimationFrame` loop, 3 particles per side per frame
+     - Fire-and-forget: does not block mutation response
+   - No confetti on NotAttending (no code path)
+
+2. **InviteHero.tsx**:
+   - RSVP badge `<motion.div>` now uses `key={rsvpStatus}` for re-trigger animation on status change
+   - Custom `initial`/`animate`/`transition` props (replaces `variants={item}`):
+     - Entrance: opacity 0→1, y 20→0, scale 0.95→[1, 1.15, 1]
+     - Scale bounce via spring (`stiffness: 300, damping: 10, delay: 0.3`)
+   - Added `glow-pulse` CSS class on `<span>` when `rsvpStatus === 'Attending'`
+
+3. **globals.css**:
+   - Added `@keyframes glow-pulse`: box-shadow 5px→20px→5px (rgba(34,197,94,0.3→0.6→0.3))
+   - Added `.glow-pulse` class: `animation: glow-pulse 2s ease-in-out 3`
+
+### Key Decisions
+- **`key={rsvpStatus}` on badge**: Framer Motion treats element as new when status changes, re-triggering entrance + bounce animation. This ensures the badge animates whenever RSVP changes (not just on page load).
+- **Separate initial/animate instead of variants**: The badge animation needs different timing (scale spring) than the general stagger children. Direct props give full control without affecting other children.
+- **Fire-and-forget confetti**: No `await`, no loading state change, no error handling needed — the confetti is purely cosmetic and must not interfere with the RSVP mutation flow.
+- **canvas-confetti vs reusing canvas particles**: Separate library because (a) existing particles are ambient (slow, subtle drift), (b) confetti burst is a high-intensity short-duration effect with different visual characteristics, (c) mixing them would require significant refactoring of the existing particle system.
+
+### Files Modified
+1. `frontend/src/components/invite/InviteRsvpBar.tsx` — Confetti import + burst in onSuccess
+2. `frontend/src/components/invite/InviteHero.tsx` — Badge animation + glow class
+3. `frontend/src/app/globals.css` — glow-pulse keyframes + class
+
+### Dependencies Added
+- `canvas-confetti@1.9.4`
+- `@types/canvas-confetti` (dev)
+
+### Evidence
+- `tsc --noEmit`: 0 errors
+- `next build`: 0 errors, all routes generated (85.2 kB shared)
+
+## 2026-06-15 — Task 17: InviteHero Countdown Timer
+
+### Changes
+1. **frontend/src/components/invite/InviteHero.tsx** — Added countdown timer:
+   - Added `useState` import + two state variables: `mounted` (SSR hydration guard) and `timeLeft` (days/hours/minutes)
+   - Added countdown `useEffect` with `setMounted(true)` + `setInterval(update, 60_000)` — computes diff from `eventDate` ISO string
+   - Past events: `timeLeft = { days: 0, hours: 0, minutes: 0 }`
+   - Derived vars: `countdownReady = mounted && timeLeft !== null`, `isPast = countdownReady && eventTimeMs <= Date.now()`
+   - Countdown JSX inserted after formattedTime, before eventLocation:
+     - Future event with days > 0: `"Через: {days}д {hours}ч {minutes}м"` with `text-brand-violet` emphasis on numbers
+     - Today (days === 0): `"Через: {hours}ч {minutes}м"`
+     - Past: `"Событие прошло"` in `text-brand-pearl/40`
+   - Framer Motion: `initial={{ opacity: 0, y: -8 }}` → `animate={{ opacity: 1, y: 0 }}` with 0.5s duration + 0.3s delay
+   - Styling: `text-brand-pearl/60 text-sm mt-4 font-medium`
+   - SSR safe: countdown only renders after `mounted` is true (client-side)
+
+### Files Modified
+1. `frontend/src/components/invite/InviteHero.tsx` — Added countdown timer logic and UI
+
+### Evidence
+- TypeScript: `tsc --noEmit` passes with 0 errors

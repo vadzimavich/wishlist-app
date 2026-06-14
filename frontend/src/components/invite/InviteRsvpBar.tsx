@@ -9,6 +9,7 @@ import { guestsApi } from '@/lib/api'
 import { GuestSelf, RsvpStatus } from '@/types'
 import { useContactStore } from '@/lib/stores/contactStore'
 import { ContactSharingModal } from './ContactSharingModal'
+import confetti from 'canvas-confetti'
 
 interface Props {
   guest: GuestSelf
@@ -36,6 +37,28 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
           ? (isFormal ? 'Отлично, ждём вас! 🎉' : 'Отлично, ждём тебя! 🎉')
           : (isFormal ? 'Жаль, что не придёте 😔' : 'Понял, жаль что не придёшь 😔')
       )
+      // Confetti burst on Attending
+      if (pendingStatus === 'Attending') {
+        const end = Date.now() + 1500
+        const frame = () => {
+          confetti({
+            particleCount: 3,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0, y: 0.7 },
+            colors: ['#9B59F5', '#F5D88A', '#22C55E'],
+          })
+          confetti({
+            particleCount: 3,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1, y: 0.7 },
+            colors: ['#9B59F5', '#F5D88A', '#22C55E'],
+          })
+          if (Date.now() < end) requestAnimationFrame(frame)
+        }
+        frame()
+      }
       // Show contact sharing prompt after Attending RSVP
       if (pendingStatus === 'Attending' && !contactPromptDismissed.current) {
         // Small delay so toast appears first
