@@ -8,6 +8,7 @@ import { InvitePage, GuestPublic, GuestSelf } from '@/types'
 import { useWishlistStore } from '@/lib/store'
 import { useWishlistRealtime } from '@/hooks/useWishlistRealtime'
 import { InviteHero } from './InviteHero'
+import { InviteCountdown } from './InviteCountdown'
 import { InviteDetails } from './InviteDetails'
 import { InviteMap } from './InviteMap'
 import { InviteGuests } from './InviteGuests'
@@ -46,18 +47,38 @@ export function InviteClientPage({ initialData, token }: Props) {
 
   // Sync guests list from fetched page data
   useEffect(() => {
-    if (page?.guests) {
-      setGuests(page.guests)
+    if (page?.guests && page?.currentGuest) {
+      setGuests(prev => {
+        // Start with server data, but ensure currentGuest is always present
+        const merged = page.guests.some(g => g.id === page.currentGuest.id)
+          ? page.guests
+          : [...page.guests, {
+              id: page.currentGuest.id,
+              name: page.currentGuest.name,
+              emoji: page.currentGuest.emoji,
+              rsvpStatus: page.currentGuest.rsvpStatus,
+              guestCount: page.currentGuest.guestCount,
+              telegram: page.currentGuest.telegram,
+              phone: page.currentGuest.phone,
+              isContactShared: page.currentGuest.isContactShared,
+            }]
+        return merged
+      })
     }
-  }, [page?.guests])
+  }, [page?.guests, page?.currentGuest?.id])
 
   // Real-time updates via SignalR
   useWishlistRealtime({
     eventId: page?.eventId,
     onGuestRsvpUpdated: (updatedGuest) => {
-      setGuests(prev =>
-        prev.map(g => g.id === updatedGuest.id ? updatedGuest : g)
-      )
+      setGuests(prev => {
+        const exists = prev.some(g => g.id === updatedGuest.id)
+        if (exists) {
+          return prev.map(g => g.id === updatedGuest.id ? updatedGuest : g)
+        }
+        // Guest not in array — add them (can happen after RSVP decline → re-confirm)
+        return [...prev, updatedGuest]
+      })
     },
     onGuestEmojiUpdated: (updatedGuest) => {
       setGuests(prev =>
@@ -81,14 +102,29 @@ export function InviteClientPage({ initialData, token }: Props) {
   // Sync currentGuest's RSVP status into guests array so RSVP→Attending re-shows the guest
   useEffect(() => {
     if (!page?.currentGuest) return
-    setGuests(prev =>
-      prev.map(g =>
-        g.id === page.currentGuest.id
-          ? { ...g, rsvpStatus: page.currentGuest.rsvpStatus }
-          : g
-      )
-    )
-  }, [page?.currentGuest?.rsvpStatus])
+    const cg = page.currentGuest
+    setGuests(prev => {
+      const exists = prev.some(g => g.id === cg.id)
+      if (exists) {
+        return prev.map(g =>
+          g.id === cg.id
+            ? { ...g, rsvpStatus: cg.rsvpStatus }
+            : g
+        )
+      }
+      // Guest was missing (e.g. removed by refetch) — add them back
+      return [...prev, {
+        id: cg.id,
+        name: cg.name,
+        emoji: cg.emoji,
+        rsvpStatus: cg.rsvpStatus,
+        guestCount: cg.guestCount,
+        telegram: cg.telegram,
+        phone: cg.phone,
+        isContactShared: cg.isContactShared,
+      }]
+    })
+  }, [page?.currentGuest?.rsvpStatus, page?.currentGuest?.id])
 
   // Lenis smooth scroll
   useEffect(() => {
@@ -144,20 +180,14 @@ export function InviteClientPage({ initialData, token }: Props) {
       </div>
 
       {/* RSVP sticky bar (always visible so guests can change their mind) */}
-      <InviteRsvpBar guest={page.currentGuest} eventId={page.eventId} />
+      <InviteRsvpBar
+        guest={page.currentGuest}
+        eventId={page.eventId}
+        chatOpen={chatOpen}
+        onChatToggle={() => setChatOpen(prev => !prev)}
+      />
 
-      {/* Chat floating button — справа от RSVP бара */}
-      <button
-        onClick={() => setChatOpen(prev => !prev)}
-        className="fixed bottom-4 right-4 z-50 w-12 h-12 rounded-full
-                   bg-brand-violet/20 border border-brand-violet/30 text-brand-violet
-                   hover:bg-brand-violet/30 hover:scale-105
-                   active:scale-95 transition-all duration-200
-                   flex items-center justify-center shadow-2xl"
-        aria-label="Чат события"
-      >
-        <MessageCircle size={22} />
-      </button>
+      {/* Chat button — rendered inside InviteRsvpBar */}
 
       {/* Hero */}
       <InviteHero
@@ -170,6 +200,9 @@ export function InviteClientPage({ initialData, token }: Props) {
         guestCount={page.currentGuest.guestCount}
         rsvpStatus={page.currentGuest.rsvpStatus}
       />
+
+      {/* Countdown */}
+      <InviteCountdown eventDate={page.eventDate} />
 
       {/* When */}
       <InviteDetails date={page.eventDate} show="when" />

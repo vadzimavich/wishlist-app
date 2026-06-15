@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
@@ -51,8 +51,6 @@ export function InviteHero({
   const heroRef = useRef<HTMLDivElement>(null)
   const coverRef = useRef<HTMLDivElement>(null)
   const particlesRef = useRef<HTMLCanvasElement>(null)
-  const [mounted, setMounted] = useState(false)
-  const [timeLeft, setTimeLeft] = useState<{days: number; hours: number; minutes: number} | null>(null)
 
   // GSAP parallax on scroll
   useEffect(() => {
@@ -174,36 +172,9 @@ export function InviteHero({
     }
   }, [])
 
-  // Countdown timer — updates every 60 seconds, client-only to avoid hydration mismatch
-  useEffect(() => {
-    setMounted(true)
-    const eventTime = new Date(eventDate).getTime()
-
-    const update = () => {
-      const now = Date.now()
-      const diff = eventTime - now
-      if (diff <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0 })
-        return
-      }
-      setTimeLeft({
-        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((diff / (1000 * 60)) % 60),
-      })
-    }
-
-    update()
-    const interval = setInterval(update, 60_000)
-    return () => clearInterval(interval)
-  }, [eventDate])
-
   const formattedDate = format(new Date(eventDate), "d MMMM yyyy", { locale: ru })
   const formattedTime = format(new Date(eventDate), "HH:mm", { locale: ru })
   const badge = getRsvpBadge(rsvpStatus, guestCount)
-  const countdownReady = mounted && timeLeft !== null
-  const eventTimeMs = new Date(eventDate).getTime()
-  const isPast = countdownReady && eventTimeMs <= Date.now()
 
   return (
     <section
@@ -272,33 +243,6 @@ export function InviteHero({
         </motion.div>
 
         <motion.p variants={item} className="text-brand-pearl/50 text-lg mb-6">{formattedTime}</motion.p>
-
-        {/* Countdown timer */}
-        {countdownReady && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="text-brand-pearl/60 text-sm mt-4 font-medium"
-          >
-            {isPast ? (
-              <span className="text-brand-pearl/40">Событие прошло</span>
-            ) : timeLeft.days > 0 ? (
-              <>
-                Через:{' '}
-                <span className="text-brand-violet">{timeLeft.days}д</span>{' '}
-                <span className="text-brand-violet">{timeLeft.hours}ч</span>{' '}
-                <span className="text-brand-violet">{timeLeft.minutes}м</span>
-              </>
-            ) : (
-              <>
-                Через:{' '}
-                <span className="text-brand-violet">{timeLeft.hours}ч</span>{' '}
-                <span className="text-brand-violet">{timeLeft.minutes}м</span>
-              </>
-            )}
-          </motion.div>
-        )}
 
         {eventLocation && (
           <motion.p variants={item} className="text-brand-pearl/50 text-base mb-6">
