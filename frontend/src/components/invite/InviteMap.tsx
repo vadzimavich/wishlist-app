@@ -95,7 +95,7 @@ export function InviteMap({ location, latitude, longitude }: Props) {
   if (!location) return null
 
   return (
-    <section className="relative z-10 px-4 py-16 max-w-2xl mx-auto space-y-6">
+    <section className="relative z-10 px-4 py-12 max-w-2xl mx-auto space-y-6">
       {/* Location header + text */}
       <div className="space-y-2">
         <h2 className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3">

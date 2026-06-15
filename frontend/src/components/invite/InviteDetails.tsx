@@ -14,7 +14,7 @@ interface Props {
 export function InviteDetails({ date, description, show = 'both', children }: Props) {
 
   return (
-    <section className="relative z-10 px-4 py-16 max-w-2xl mx-auto space-y-10 text-center">
+    <section className="relative z-10 px-4 pt-20 pb-12 max-w-2xl mx-auto space-y-10 text-center">
       {show !== 'details' && (
         <div className="space-y-3">
           <h2 className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3">

@@ -117,7 +117,7 @@ export function InviteActivityFeed({ eventId, guests }: Props) {
   }
 
   return (
-    <section className="relative z-10 px-4 py-16 max-w-2xl mx-auto">
+    <section className="relative z-10 px-4 py-12 max-w-2xl mx-auto">
       {/* ── Section title ────────────────────────────────────────────── */}
       <div className="text-center mb-10">
         <motion.h2

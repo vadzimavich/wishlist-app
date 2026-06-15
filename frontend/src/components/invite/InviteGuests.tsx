@@ -363,7 +363,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
 
   if (guests.length === 0 || visibleGuests.length === 0) {
     return (
-      <section className="relative z-10 overflow-hidden py-16">
+      <section className="relative z-10 overflow-hidden py-12">
         <div className="text-center px-4">
           <h2 className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3">
             <Users size={28} className="text-brand-violet shrink-0" />
@@ -479,7 +479,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
   }
 
   return (
-    <section className="relative z-10 overflow-hidden py-12 sm:py-16">
+    <section className="relative z-10 overflow-hidden py-12">
       <div className="text-center px-4 mb-6 sm:mb-8">
         <motion.h2 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }} transition={{ duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
