@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { useQuery } from '@tanstack/react-query'
 import { guestsApi } from '@/lib/api'
@@ -14,7 +14,6 @@ import { InviteGuests } from './InviteGuests'
 import { InviteWishlist } from './InviteWishlist'
 import { InviteRsvpBar } from './InviteRsvpBar'
 import { useContactStore } from '@/lib/stores/contactStore'
-import { InviteActivityFeed } from './InviteActivityFeed'
 
 const InviteChat = dynamic(() => import('./InviteChat').then(m => m.InviteChat), { ssr: false })
 
@@ -25,6 +24,7 @@ interface Props {
 
 export function InviteClientPage({ initialData, token }: Props) {
   const { setItems } = useWishlistStore()
+  const [chatOpen, setChatOpen] = useState(false)
   const [guests, setGuests] = useState<GuestPublic[]>(initialData?.guests ?? [])
   const lenisRef = useRef<any>(null)
 
@@ -81,25 +81,6 @@ export function InviteClientPage({ initialData, token }: Props) {
     )
   }, [page?.currentGuest?.rsvpStatus])
 
-  // Chat: state for opening collective chat from wishlist modal
-  const [chatOpenClaimId, setChatOpenClaimId] = useState<string | null>(null)
-
-  const handleOpenCollectiveChat = useCallback((claimId: string) => {
-    setChatOpenClaimId(claimId)
-  }, [])
-
-  // Compute collectives from wishlist items where current guest is involved
-  const computedCollectives = useMemo(() => {
-    if (!page?.wishlistItems) return []
-    return page.wishlistItems
-      .filter(item => item.status === 'Collective' && item.activeClaim)
-      .map(item => ({
-        claimId: item.activeClaim!.id,
-        itemName: item.name,
-        participantCount: item.activeClaim!.participants.length,
-      }))
-  }, [page?.wishlistItems])
-
   // Lenis smooth scroll
   useEffect(() => {
     let lenis: any
@@ -154,7 +135,7 @@ export function InviteClientPage({ initialData, token }: Props) {
       </div>
 
       {/* RSVP sticky bar (always visible so guests can change their mind) */}
-      <InviteRsvpBar guest={page.currentGuest} eventId={page.eventId} />
+      <InviteRsvpBar guest={page.currentGuest} eventId={page.eventId} onChatToggle={() => setChatOpen(prev => !prev)} chatOpen={chatOpen} />
 
       {/* Hero */}
       <InviteHero
@@ -168,14 +149,14 @@ export function InviteClientPage({ initialData, token }: Props) {
         rsvpStatus={page.currentGuest.rsvpStatus}
       />
 
-      {/* Details */}
-      <InviteDetails
-        date={page.eventDate}
-        description={page.eventDescription}
-      />
+      {/* When */}
+      <InviteDetails date={page.eventDate} show="when" />
 
       {/* Map */}
       <InviteMap location={page.eventLocation} latitude={page.eventLatitude} longitude={page.eventLongitude} />
+
+      {/* Details */}
+      <InviteDetails date={page.eventDate} description={page.eventDescription} show="details" />
 
       {/* Guests */}
       <InviteGuests guests={guests} currentGuestId={page.currentGuest.id} currentGuestCount={page.currentGuest.guestCount} guestToken={token} />
@@ -186,13 +167,6 @@ export function InviteClientPage({ initialData, token }: Props) {
         eventId={page.eventId}
         currentGuestId={page.currentGuest.id}
         items={page.wishlistItems}
-        onOpenCollectiveChat={handleOpenCollectiveChat}
-      />
-
-      {/* Activity Feed */}
-      <InviteActivityFeed
-        eventId={page.eventId}
-        guests={guests}
       />
 
       {/* Chat (floating bubble) */}
@@ -200,8 +174,8 @@ export function InviteClientPage({ initialData, token }: Props) {
         eventId={page.eventId}
         guestToken={token}
         currentGuestId={page.currentGuest.id}
-        collectives={computedCollectives}
-        openToClaimId={chatOpenClaimId}
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
       />
 
       {/* Footer */}

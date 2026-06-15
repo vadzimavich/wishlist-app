@@ -2,12 +2,11 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import * as Tooltip from '@radix-ui/react-tooltip'
 import toast from 'react-hot-toast'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Gift, ExternalLink, X, Check, UserPlus, MessageCircle } from 'lucide-react'
+import { Gift, ExternalLink, X, Check, UserPlus } from 'lucide-react'
 import { giftsApi } from '@/lib/api'
-import { WishlistItem, ClaimType, GuestPublic } from '@/types'
+import { WishlistItem, ClaimType } from '@/types'
 import { formatPrice } from '@/lib/utils'
 
 interface Props {
@@ -15,7 +14,6 @@ interface Props {
   eventId: string
   currentGuestId: string
   items: WishlistItem[]
-  onOpenCollectiveChat?: (claimId: string) => void
 }
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
@@ -34,77 +32,7 @@ const STATUS_ORDER: Record<string, number> = {
   Purchased: 3,
 }
 
-function ParticipantAvatars({ participants }: { participants: GuestPublic[] }) {
-  const visible = participants.slice(0, 4)
-  const overflow = participants.length - 4
-
-  return (
-    <div className="flex items-center gap-1">
-      <Tooltip.Provider delayDuration={200}>
-        {visible.map((p) => (
-          <Tooltip.Root key={p.id}>
-            <Tooltip.Trigger asChild>
-              <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs
-                               bg-brand-deep border border-brand-pearl/10 cursor-help
-                               select-none shrink-0">
-                {p.emoji}
-              </span>
-            </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content
-                side="top"
-                sideOffset={4}
-                className="z-[60] px-2 py-1 text-xs rounded-md bg-[#1E1E2A] border border-brand-pearl/10
-                           text-brand-pearl shadow-lg"
-              >
-                {p.name}
-                <Tooltip.Arrow className="fill-[#1E1E2A]" />
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        ))}
-        {overflow > 0 && (
-          <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px]
-                           bg-brand-deep border border-brand-pearl/10 text-brand-pearl/60
-                           font-medium shrink-0">
-            +{overflow}
-          </span>
-        )}
-      </Tooltip.Provider>
-    </div>
-  )
-}
-
-function ProgressBar({ current, total }: { current: number; total: number }) {
-  const pct = Math.min(current / total, 1)
-  const isLow = pct < 0.4
-  const isMid = pct >= 0.4 && pct < 0.8
-  const isHigh = pct >= 0.8
-  const barBg = isLow ? 'bg-info/20' : isMid ? 'bg-warning/20' : 'bg-success/20'
-  const fillBg = isLow ? 'bg-info' : isMid ? 'bg-warning' : 'bg-success'
-  const textCls = isLow ? 'text-info' : isMid ? 'text-warning' : 'text-success'
-
-  return (
-    <div className="mt-2">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[11px] text-brand-pearl/50">
-          {current} из {total} присоединились
-        </span>
-        <span className={`text-[11px] font-medium ${textCls}`}>
-          {Math.round(pct * 100)}%
-        </span>
-      </div>
-      <div className={`h-1.5 rounded-full ${barBg} overflow-hidden`}>
-        <div
-          className={`h-full rounded-full transition-all duration-700 ease-out ${fillBg}`}
-          style={{ width: `${pct * 100}%` }}
-        />
-      </div>
-    </div>
-  )
-}
-
-export function InviteWishlist({ guestToken, eventId, currentGuestId, items, onOpenCollectiveChat }: Props) {
+export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: Props) {
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
       const orderA = STATUS_ORDER[a.status] ?? 99
@@ -197,9 +125,10 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items, onO
   if (items.length === 0) return null
 
   return (
-    <section ref={sectionRef} className="relative z-10 px-4 py-8 max-w-2xl mx-auto">
+    <section ref={sectionRef} className="relative z-10 px-4 py-20 max-w-2xl mx-auto">
       <div className="text-center mb-8">
-        <h2 className="font-display font-bold text-3xl md:text-4xl gradient-text-sweep">
+        <h2 className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3">
+          <Gift size={28} className="text-brand-violet shrink-0" />
           Вишлист
         </h2>
         <p className="text-brand-pearl/40 text-sm mt-2">
@@ -207,63 +136,7 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items, onO
         </p>
       </div>
 
-      {/* Progress Summary Bar */}
-      {(() => {
-        const total = items.length
-        const chosen = items.filter(i => i.status !== 'Available').length
-        const collective = items.filter(i => i.status === 'Collective').length
-        const purchased = items.filter(i => i.status === 'Purchased').length
-        const pct = total > 0 ? Math.round((chosen / total) * 100) : 0
-
-        // SVG progress ring params
-        const r = 20
-        const circ = 2 * Math.PI * r
-        const offset = circ - (pct / 100) * circ
-
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="liquid-glass p-4 mb-4 flex items-center gap-4"
-          >
-            <div className="relative shrink-0">
-              <svg width="52" height="52" className="-rotate-90">
-                <defs>
-                  <linearGradient id="progress-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#9B59F5" />
-                    <stop offset="100%" stopColor="#F5D88A" />
-                  </linearGradient>
-                </defs>
-                <circle cx="26" cy="26" r={r} fill="none"
-                  stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
-                <motion.circle cx="26" cy="26" r={r} fill="none"
-                  stroke="url(#progress-grad)" strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray={circ}
-                  initial={{ strokeDashoffset: circ }}
-                  animate={{ strokeDashoffset: offset }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                />
-              </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-brand-pearl">
-                {pct}%
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-brand-pearl text-sm font-medium">
-                {chosen} из {total} выбрано
-              </p>
-              <p className="text-brand-pearl/40 text-xs mt-0.5">
-                {collective > 0 && `${collective} в сборе`}
-                {collective > 0 && purchased > 0 && ' · '}
-                {purchased > 0 && `${purchased} куплен${purchased > 1 ? 'ы' : ''}`}
-              </p>
-            </div>
-          </motion.div>
-        )
-      })()}
-
-      <div className="space-y-3">
+      <div className="space-y-4">
         {sortedItems.map(item => {
           const status = STATUS_CONFIG[item.status] ?? DEFAULT_STATUS
           const myItem = isMyClaim(item)
@@ -332,24 +205,11 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items, onO
                     ) : inCollective ? (
                       <p className="text-xs text-info">✓ Ты в сборе</p>
                     ) : (
-                      <>
-                        {item.activeClaim.participants.length > 0 ? (
-                          <ParticipantAvatars participants={item.activeClaim.participants} />
-                        ) : (
-                          <p className="text-xs text-brand-pearl/40">
-                            {item.activeClaim.claimer.name}
-                          </p>
-                        )}
-                      </>
+                      <p className="text-xs text-brand-pearl/40">
+                        {item.activeClaim.claimer.name}
+                      </p>
                     )}
 
-                    {/* Progress bar for collective items */}
-                    {item.status === 'Collective' && item.activeClaim && (
-                      <ProgressBar
-                        current={item.activeClaim.participants.length}
-                        total={Math.max(item.activeClaim.claimer.guestCount || 0, 5)}
-                      />
-                    )}
                   </div>
                 )}
 
@@ -471,11 +331,7 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items, onO
                           </span>
                           <span className="text-xs text-brand-pearl/60">{selected.activeClaim?.claimer.name}</span>
                         </div>
-                        {selected.activeClaim && selected.activeClaim.participants.length > 0 && (
-                          <div className="mt-2 flex justify-center">
-                            <ParticipantAvatars participants={selected.activeClaim.participants} />
-                          </div>
-                        )}
+
                         <button
                           onClick={() => selected.activeClaim && joinMutation.mutate(selected.activeClaim.id)}
                           disabled={joinMutation.isPending}
@@ -505,12 +361,28 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items, onO
 
                     {isInMyCollective(selected) && !isMyClaim(selected) && (
                       <>
-                        <p className="text-info text-sm text-center">Ты участвуешь в сборе ✓</p>
-                        {selected.activeClaim && selected.activeClaim.participants.length > 0 && (
-                          <div className="mt-2 flex justify-center">
-                            <ParticipantAvatars participants={selected.activeClaim.participants} />
+                        <p className="text-info text-sm text-center font-medium">Ты в сборе!</p>
+                        <div className="mt-3 space-y-2">
+                          <div className="flex items-center justify-center gap-2">
+                            <span className="text-xs text-brand-pearl/50">Сбор открыл(а):</span>
+                            <span className="text-sm">{selected.activeClaim?.claimer.emoji}</span>
+                            <span className="text-xs text-brand-pearl/70">{selected.activeClaim?.claimer.name}</span>
                           </div>
-                        )}
+                          {selected.activeClaim && selected.activeClaim.participants.length > 0 && (
+                            <>
+                              <p className="text-xs text-brand-pearl/50 text-center">Участники:</p>
+                              <div className="flex flex-wrap justify-center gap-x-3 gap-y-1">
+                                {selected.activeClaim.participants.map((p) => (
+                                  <span key={p.id} className="flex items-center gap-1.5 text-xs text-brand-pearl/70">
+                                    <span className="text-sm">{p.emoji}</span>
+                                    <span>{p.name}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            </>
+                          )}
+
+                        </div>
                         <button
                           onClick={() => selected.activeClaim && cancelMutation.mutate(selected.activeClaim.id)}
                           className="w-full py-3 rounded-xl border border-danger/20 text-danger
@@ -593,22 +465,6 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items, onO
                         </div>
                       )}
 
-                      {/* Chat button */}
-                      {selected.activeClaim && onOpenCollectiveChat && (
-                        <button
-                          onClick={() => {
-                            onOpenCollectiveChat(selected.activeClaim!.id)
-                            setSelectedItem(null)
-                            setModalStep('choose')
-                          }}
-                          className="w-full py-3 rounded-xl bg-info/20 border border-info/30
-                                     text-info font-semibold hover:bg-info/30 transition-all
-                                     flex items-center justify-center gap-2"
-                        >
-                          <MessageCircle size={16} />
-                          Написать в чат сбора
-                        </button>
-                      )}
                     </motion.div>
                   )}
                 </div>

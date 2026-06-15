@@ -237,7 +237,7 @@ export function InviteHero({
         variants={container}
         initial="hidden"
         animate="show"
-        className="relative z-10 text-center max-w-2xl mx-auto"
+        className="relative z-10 text-center max-w-2xl mx-auto py-6"
       >
         {/* From host */}
         <motion.div variants={item} className="mb-6">
@@ -250,7 +250,7 @@ export function InviteHero({
         {/* Guest name */}
         <motion.p
           variants={item}
-          className="text-brand-champagne/80 text-lg md:text-xl mb-3 font-body"
+          className="text-brand-champagne/80 text-lg md:text-xl mb-6 font-body"
         >
           {guestCount > 1 ? 'Здравствуйте' : 'Привет'}, {guestName}!
         </motion.p>
@@ -265,13 +265,13 @@ export function InviteHero({
         </motion.h1>
 
         {/* Date */}
-        <motion.div variants={item} className="flex items-center justify-center gap-3 mb-2">
+        <motion.div variants={item} className="flex items-center justify-center gap-3 mb-5">
           <div className="h-px w-12 bg-gradient-to-r from-transparent to-brand-violet/40" />
           <p className="text-brand-pearl/90 text-xl font-medium">{formattedDate}</p>
           <div className="h-px w-12 bg-gradient-to-l from-transparent to-brand-violet/40" />
         </motion.div>
 
-        <motion.p variants={item} className="text-brand-pearl/50 text-lg mb-4">{formattedTime}</motion.p>
+        <motion.p variants={item} className="text-brand-pearl/50 text-lg mb-6">{formattedTime}</motion.p>
 
         {/* Countdown timer */}
         {countdownReady && (
@@ -324,11 +324,6 @@ export function InviteHero({
           </motion.div>
         )}
 
-        {rsvpStatus === 'Pending' && (
-          <motion.p variants={item} className="text-brand-pearl/40 text-sm mt-4">
-            ↓ Прокрути, чтобы подтвердить присутствие
-          </motion.p>
-        )}
       </motion.div>
 
       {/* Scroll indicator */}

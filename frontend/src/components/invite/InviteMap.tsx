@@ -98,7 +98,10 @@ export function InviteMap({ location, latitude, longitude }: Props) {
     <section className="relative z-10 px-4 py-16 max-w-2xl mx-auto space-y-6">
       {/* Location header + text */}
       <div className="space-y-2">
-        <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight gradient-text-sweep">Где</h2>
+        <h2 className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3">
+              <MapPin size={28} className="text-brand-violet shrink-0" />
+              Где
+            </h2>
         <p className="text-brand-pearl/80 text-sm sm:text-base">{location}</p>
       </div>
 

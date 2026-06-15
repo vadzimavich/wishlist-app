@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { Bell } from 'lucide-react'
 import { ActivityEvent, GuestPublic } from '@/types'
 import { useActivityFeed } from '@/hooks/useActivityFeed'
 
@@ -124,8 +125,9 @@ export function InviteActivityFeed({ eventId, guests }: Props) {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-40px' }}
           transition={{ duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
-          className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight gradient-text-sweep"
+          className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3"
         >
+          <Bell size={28} className="text-brand-violet shrink-0" />
           Лента активности
         </motion.h2>
         <motion.p

@@ -2,29 +2,39 @@
 
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { Calendar, Info } from 'lucide-react'
 
 interface Props {
   date: string
-  description: string | null
+  description?: string | null
+  show?: 'when' | 'details' | 'both'
 }
 
-export function InviteDetails({ date, description }: Props) {
+export function InviteDetails({ date, description, show = 'both' }: Props) {
 
   return (
-    <section className="relative z-10 px-4 py-16 max-w-2xl mx-auto space-y-8">
-      <div className="space-y-2">
-        <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight gradient-text-sweep">Когда</h2>
-        <p className="text-brand-pearl font-medium text-lg">
-          {format(new Date(date), "d MMMM yyyy, EEEE", { locale: ru })}
-        </p>
-        <p className="text-brand-pearl/60 text-sm">
-          {format(new Date(date), "HH:mm")}
-        </p>
-      </div>
+    <section className="relative z-10 px-4 py-20 max-w-2xl mx-auto space-y-10 text-center">
+      {show !== 'details' && (
+        <div className="space-y-3">
+          <h2 className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3">
+            <Calendar size={28} className="text-brand-violet shrink-0" />
+            Когда
+          </h2>
+          <p className="text-brand-pearl font-medium text-lg">
+            {format(new Date(date), "d MMMM yyyy, EEEE", { locale: ru })}
+          </p>
+          <p className="text-brand-pearl/60 text-sm">
+            {format(new Date(date), "HH:mm")}
+          </p>
+        </div>
+      )}
 
-      {description && (
-        <div className="space-y-2">
-          <h2 className="font-display font-extrabold text-3xl sm:text-4xl tracking-tight gradient-text-sweep">Детали</h2>
+      {show !== 'when' && description && (
+        <div className="space-y-3">
+          <h2 className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3">
+            <Info size={28} className="text-brand-violet shrink-0" />
+            Детали
+          </h2>
           <p className="text-brand-pearl/80 text-sm sm:text-base leading-relaxed whitespace-pre-wrap">
             {description}
           </p>

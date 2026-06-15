@@ -4,19 +4,22 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Phone } from 'lucide-react'
+import { Phone, MessageCircle } from 'lucide-react'
 import { guestsApi } from '@/lib/api'
 import { GuestSelf, RsvpStatus } from '@/types'
 import { useContactStore } from '@/lib/stores/contactStore'
+import { useChatStore } from '@/lib/stores/chatStore'
 import { ContactSharingModal } from './ContactSharingModal'
 import confetti from 'canvas-confetti'
 
 interface Props {
   guest: GuestSelf
   eventId: string
+  onChatToggle: () => void
+  chatOpen?: boolean
 }
 
-export function InviteRsvpBar({ guest, eventId }: Props) {
+export function InviteRsvpBar({ guest, eventId, onChatToggle, chatOpen = false }: Props) {
   const qc = useQueryClient()
   const [note, setNote] = useState('')
   const [expanded, setExpanded] = useState(false)
@@ -26,6 +29,7 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
   const contactPromptDismissed = useRef(false)
   const isFormal = guest.guestCount > 1
   const contactStore = useContactStore()
+  const unreadMessages = useChatStore((s) => s.messages['__event__']?.length ?? 0)
 
   const rsvpMutation = useMutation({
     mutationFn: (status: RsvpStatus) =>
@@ -113,6 +117,21 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
             title="Поделиться контактом"
           >
             <Phone size={16} />
+          </button>
+          <button
+            onClick={onChatToggle}
+            className="p-2 rounded-lg text-brand-pearl/40 hover:text-brand-violet/70 hover:bg-brand-pearl/5
+                       transition-all active:scale-90 relative"
+            title="Чат события"
+          >
+            <MessageCircle size={16} />
+            {unreadMessages > 0 && !chatOpen && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-danger
+                               text-white text-[9px] font-bold flex items-center justify-center
+                               shadow-lg">
+                {unreadMessages > 9 ? '9+' : unreadMessages}
+              </span>
+            )}
           </button>
           <div className="flex items-center gap-2">
             <button
