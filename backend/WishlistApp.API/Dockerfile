@@ -3,7 +3,7 @@ FROM ubuntu:24.04 AS build
 WORKDIR /src
 
 # Install wget, libicu and .NET SDK 10.0 via official script (bypasses MCR rate limits)
-RUN apt-get update && apt-get install -y wget libicu && \
+RUN apt-get update && apt-get install -y wget libicu-dev && \
     wget -q https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
     ./dotnet-install.sh --channel 10.0 --install-dir /usr/share/dotnet && \
@@ -38,7 +38,7 @@ RUN apt-get update && apt-get install -y \
     locales \
     ca-certificates \
     libkrb5-3 \
-    libicu \
+    libicu74 \
     && rm -rf /var/lib/apt/lists/*
 
 # Копируем опубликованные файлы
