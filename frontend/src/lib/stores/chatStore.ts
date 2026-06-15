@@ -88,9 +88,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       const response = await axios.get(`${API_URL}/api/events/${eventId}/messages`, { params })
       const responseData = response.data?.data ?? response.data
-      const chatMessages: ChatMessage[] = Array.isArray(responseData)
+      // Response from backend: { data: { messages: [...], total: N } }
+      const messagesData = Array.isArray(responseData)
         ? responseData
-        : responseData?.items ?? []
+        : responseData?.messages ?? responseData?.items ?? []
+      const chatMessages: ChatMessage[] = messagesData
 
       const key = claimId || '__event__'
 

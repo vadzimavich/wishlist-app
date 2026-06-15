@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Check, UserPlus, Gift } from 'lucide-react'
 import type { WishlistItem } from '@/types'
@@ -31,31 +31,13 @@ export function WishlistClaimModal({
 }: WishlistClaimModalProps) {
   const [modalStep, setModalStep] = useState<'choose' | 'success'>('choose')
   const [successType, setSuccessType] = useState<'claim' | 'join'>('claim')
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // Clean up auto-close timer on unmount
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [])
 
   // Reset internal state when parent closes the modal
   useEffect(() => {
-    if (item === null) {
-      setModalStep('choose')
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-        timerRef.current = null
-      }
-    }
+    if (item === null) setModalStep('choose')
   }, [item])
 
   const handleClose = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current)
-      timerRef.current = null
-    }
     setModalStep('choose')
     onClose()
   }
@@ -69,10 +51,6 @@ export function WishlistClaimModal({
     onClaim(item.id, type)
     setSuccessType('claim')
     setModalStep('success')
-    timerRef.current = setTimeout(() => {
-      setModalStep('choose')
-      onClose()
-    }, 1500)
   }
 
   const handleJoin = () => {
@@ -80,10 +58,6 @@ export function WishlistClaimModal({
     onJoinCollective(item.activeClaim.id)
     setSuccessType('join')
     setModalStep('success')
-    timerRef.current = setTimeout(() => {
-      setModalStep('choose')
-      onClose()
-    }, 1500)
   }
 
   const handleCancel = () => {
@@ -103,7 +77,7 @@ export function WishlistClaimModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md"
-            onClick={handleClose}
+            onClick={modalStep === 'success' ? undefined : handleClose}
           />
 
           {/* Modal */}
@@ -121,7 +95,7 @@ export function WishlistClaimModal({
               <div className="liquid-glass p-6 shadow-2xl relative">
                 {/* Close button */}
                 <button
-                  onClick={handleClose}
+            onClick={handleClose}
                   className="absolute top-4 right-4 text-brand-pearl/40 hover:text-brand-pearl transition-colors z-10"
                 >
                   <X size={18} />
@@ -287,6 +261,12 @@ export function WishlistClaimModal({
                     </motion.div>
                     <p className="text-brand-pearl font-semibold text-lg">Отлично!</p>
                     <p className="text-brand-pearl/60 text-sm mt-1">Подарок выбран</p>
+                    <button
+                      onClick={handleClose}
+                      className="mt-6 w-full py-3 rounded-xl bg-brand-violet hover:bg-brand-purple text-white font-semibold text-sm transition-colors duration-200"
+                    >
+                      Понятно
+                    </button>
                   </motion.div>
                 )}
 
@@ -329,6 +309,12 @@ export function WishlistClaimModal({
                         </div>
                       </div>
                     )}
+                    <button
+                      onClick={handleClose}
+                      className="mt-6 w-full py-3 rounded-xl bg-brand-violet hover:bg-brand-purple text-white font-semibold text-sm transition-colors duration-200"
+                    >
+                      Понятно
+                    </button>
                   </motion.div>
                 )}
               </div>

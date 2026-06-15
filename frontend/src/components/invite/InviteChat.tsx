@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, Fragment } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MessageCircle, X, Send, Pencil, Trash2, Loader2, ChevronLeft, Phone } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
@@ -75,23 +75,24 @@ export function InviteChat({ eventId, guestToken, currentGuestId, isOpen, onClos
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     const count = currentMessages.length
-    if (count > prevMessageCountRef.current) {
+    if (count > 0 && count > prevMessageCountRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
     prevMessageCountRef.current = count
   }, [currentMessages.length])
 
-  // Scroll to bottom on first open
+  // Scroll to last message when chat opens or messages change
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
-      }, 350)
+    if (isOpen && currentMessages.length > 0) {
+      const timer = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: currentMessages.length > prevMessageCountRef.current ? 'smooth' : 'auto' })
+      }, 400)
+      return () => clearTimeout(timer)
     }
-  }, [isOpen])
+  }, [isOpen, currentMessages.length])
 
   // Close context menu on click outside
   useEffect(() => {
@@ -260,72 +261,90 @@ export function InviteChat({ eventId, guestToken, currentGuestId, isOpen, onClos
           {/* Messages */}
           {currentMessages.map((msg) => {
             const isOwn = isOwnMessage(msg.guestId)
+            const isBeingDeleted = deleteConfirmId === msg.id
 
             return (
-              <div
-                key={msg.id}
-                className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  onContextMenu={(e) => handleContextMenuEvent(msg.id, isOwn, e)}
-                  onTouchStart={(e) => handleTouchStart(msg.id, isOwn, e)}
-                  onTouchEnd={handleTouchEnd}
-                  className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-3.5 py-2.5
-                              ${isOwn
-                                ? 'bg-brand-violet/15 border border-brand-violet/20 rounded-br-md'
-                                : 'bg-brand-pearl/5 border border-brand-pearl/10 rounded-bl-md'
-                              }`}
-                >
-                  {/* Guest name + emoji */}
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-sm leading-none">{msg.guestEmoji || '🙂'}</span>
-                    <span className={`text-xs font-medium ${isOwn ? 'text-brand-violet' : 'text-brand-pearl/60'}`}>
-                      {isOwn ? 'Вы' : msg.guestName}
-                    </span>
-                  </div>
-
-                  {/* Message text */}
-                  <p className="text-brand-pearl/90 text-sm leading-relaxed whitespace-pre-wrap break-words">
-                    {msg.text}
-                  </p>
-
-                  {/* Footer: timestamp + edited badge */}
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[10px] text-brand-pearl/30">
-                      {formatTime(msg.createdAt)}
-                    </span>
-                    {msg.editedAt && (
-                      <span className="text-[10px] italic text-brand-pearl/20">
-                        изменено
+              <Fragment key={msg.id}>
+                <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    onContextMenu={(e) => handleContextMenuEvent(msg.id, isOwn, e)}
+                    onTouchStart={(e) => handleTouchStart(msg.id, isOwn, e)}
+                    onTouchEnd={handleTouchEnd}
+                    className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-3.5 py-2.5
+                                ${isOwn
+                                  ? 'bg-brand-violet/15 border border-brand-violet/20 rounded-br-md'
+                                  : 'bg-brand-pearl/5 border border-brand-pearl/10 rounded-bl-md'
+                                }`}
+                  >
+                    {/* Guest name + emoji */}
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-sm leading-none">{msg.guestEmoji || '🙂'}</span>
+                      <span className={`text-xs font-medium ${isOwn ? 'text-brand-violet' : 'text-brand-pearl/60'}`}>
+                        {isOwn ? 'Вы' : msg.guestName}
                       </span>
-                    )}
+                    </div>
+
+                    {/* Message text */}
+                    <p className="text-brand-pearl/90 text-sm leading-relaxed whitespace-pre-wrap break-words">
+                      {msg.text}
+                    </p>
+
+                    {/* Footer: timestamp + edited badge + actions */}
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-brand-pearl/30">
+                        {formatTime(msg.createdAt)}
+                      </span>
+                      {msg.editedAt && (
+                        <span className="text-[10px] italic text-brand-pearl/20">
+                          изменено
+                        </span>
+                      )}
+                      {isOwn && (
+                        <div className="flex items-center gap-1 ml-auto">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); startEdit(msg.id, msg.text); }}
+                            className="p-1 rounded text-brand-pearl/30 hover:text-brand-champagne/80 hover:bg-brand-pearl/5 transition-all"
+                            title="Редактировать"
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(msg.id); }}
+                            className="p-1 rounded text-brand-pearl/30 hover:text-danger/80 hover:bg-danger/5 transition-all"
+                            title="Удалить"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+
+                {/* Delete confirmation — appears right after the deleted message */}
+                {isBeingDeleted && (
+                  <div className="liquid-glass p-3 flex items-center justify-between gap-3">
+                    <p className="text-sm text-brand-pearl/70">Удалить сообщение?</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setDeleteConfirmId(null)}
+                        className="px-3 py-1 rounded-lg text-xs text-brand-pearl/50 hover:text-brand-pearl transition-colors"
+                      >
+                        Отмена
+                      </button>
+                      <button
+                        onClick={confirmDelete}
+                        className="px-3 py-1 rounded-lg text-xs bg-danger/20 border border-danger/30 
+                                   text-danger hover:bg-danger/30 transition-all"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </Fragment>
             )
           })}
-
-          {/* Delete confirmation inline */}
-          {deleteConfirmId && (
-            <div className="liquid-glass p-3 flex items-center justify-between gap-3">
-              <p className="text-sm text-brand-pearl/70">Удалить сообщение?</p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setDeleteConfirmId(null)}
-                  className="px-3 py-1 rounded-lg text-xs text-brand-pearl/50 hover:text-brand-pearl transition-colors"
-                >
-                  Отмена
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-3 py-1 rounded-lg text-xs bg-danger/20 border border-danger/30 
-                             text-danger hover:bg-danger/30 transition-all"
-                >
-                  Удалить
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Scroll anchor */}
           <div ref={messagesEndRef} />

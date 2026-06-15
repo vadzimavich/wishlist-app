@@ -32,11 +32,13 @@ export default function GuestsPage() {
     setTimeout(() => setCopied(null), 2000)
   }
 
+  const sumGuests = (list: typeof allGuests) => list.reduce((s, g) => s + Math.max(1, g.guestCount), 0)
+
   const stats = {
-    total: allGuests.length,
-    attending: allGuests.filter(g => g.rsvpStatus === 'Attending').length,
-    notAttending: allGuests.filter(g => g.rsvpStatus === 'NotAttending').length,
-    pending: allGuests.filter(g => g.rsvpStatus === 'Pending').length,
+    total: sumGuests(allGuests),
+    attending: sumGuests(allGuests.filter(g => g.rsvpStatus === 'Attending')),
+    notAttending: sumGuests(allGuests.filter(g => g.rsvpStatus === 'NotAttending')),
+    pending: sumGuests(allGuests.filter(g => g.rsvpStatus === 'Pending')),
   }
 
   return (
@@ -82,7 +84,7 @@ export default function GuestsPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {events.filter(ev => ev.guests.length > 0).map(ev => (
+          {events.filter(ev => ev.guests.some(g => g.guestCount > 0)).map(ev => (
             <div key={ev.id}>
               {/* Event header */}
               <div className="flex items-center justify-between mb-3">
@@ -117,9 +119,14 @@ export default function GuestsPage() {
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-admin-text">{guest.name}</p>
-                        {guest.rsvpNote && (
-                          <p className="text-xs text-admin-muted truncate mt-0.5">"{guest.rsvpNote}"</p>
-                        )}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {(guest.guestCount || 0) > 1 && (
+                            <span className="text-xs text-admin-muted">+{guest.guestCount}</span>
+                          )}
+                          {guest.rsvpNote && (
+                            <p className="text-xs text-admin-muted truncate">"{guest.rsvpNote}"</p>
+                          )}
+                        </div>
                       </div>
 
                       {/* RSVP status */}
@@ -145,7 +152,7 @@ export default function GuestsPage() {
             </div>
           ))}
 
-          {events.every(ev => ev.guests.length === 0) && (
+          {events.every(ev => ev.guests.every(g => (g.guestCount ?? 0) === 0)) && (
             <div className="text-center py-20">
               <Users size={48} className="text-admin-muted mx-auto mb-4 opacity-30" />
               <p className="text-admin-text font-medium">Гостей ещё нет</p>

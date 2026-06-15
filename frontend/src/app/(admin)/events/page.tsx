@@ -4,11 +4,17 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { Plus, Trash2, Pencil, Calendar, Users, X, Copy, Check, Eye, MapPin } from 'lucide-react'
+import { Plus, Trash2, Pencil, Calendar, Users, X, Copy, Check, Eye, MapPin, MessageCircle } from 'lucide-react'
 import { eventsApi, guestsApi } from '@/lib/api'
 import { Event, CreateEventForm, CreateGuestForm, UpdateGuestForm, Guest } from '@/types'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
+
+const EMOJI_OPTIONS = [
+  '🙂','😎','🥳','🎉','💝','🎀','🌸','✨','🦄','🐱','🐶','🌟',
+  '🦊','🐼','🐨','🦁','🐸','🦋','🐙','🦖','🌺','🍀','🌈','⭐',
+  '🔥','💎','🎸','🏄','🚀','🎪','🧩','🏆','👑','🎭','🍕','🧁',
+]
 
 const EMPTY_EVENT: CreateEventForm = { title: '', date: '', location: '', latitude: '', longitude: '', description: '', coverImageUrl: '' }
 const EMPTY_GUEST: CreateGuestForm = { name: '', emoji: '🙂' }
@@ -164,7 +170,8 @@ export default function EventsPage() {
         <div className="space-y-3">
           <AnimatePresence initial={false}>
             {events.map(ev => {
-              const attending = ev.guests.filter(g => g.rsvpStatus === 'Attending').length
+              const totalGuests = ev.guests.reduce((s, g) => s + Math.max(1, g.guestCount), 0)
+              const attending = ev.guests.filter(g => g.rsvpStatus === 'Attending').reduce((s, g) => s + Math.max(1, g.guestCount), 0)
               const past = new Date(ev.date) < new Date()
               return (
                 <motion.div
@@ -217,7 +224,7 @@ export default function EventsPage() {
                           className="flex items-center gap-1.5 text-xs text-admin-muted hover:text-admin-text transition-colors"
                         >
                           <Users size={13} />
-                          {ev.guests.length} гостей · {attending} придут
+                          {totalGuests} гостей · {attending} придут
                         </button>
                       </div>
                     </div>
@@ -340,7 +347,7 @@ export default function EventsPage() {
                   <div>
                     <label className="block text-xs text-admin-muted mb-1.5">Аватар</label>
                     <div className="flex gap-1.5 flex-wrap">
-                      {['🙂','😎','🥳','🎉','💝','🎀','🌸','✨','🦄','🐱','🐶','🌟'].map(e => (
+                      {EMOJI_OPTIONS.map(e => (
                         <button key={e} type="button" onClick={() => setGuestForm(p => ({ ...p, emoji: e }))}
                           className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all
                             ${guestForm.emoji === e
@@ -365,7 +372,7 @@ export default function EventsPage() {
               {/* Guests list */}
               <div className="px-5 py-4 space-y-2">
                 <p className="text-xs font-medium text-admin-muted uppercase tracking-wide mb-3">
-                  Список гостей ({currentGuestEvent?.guests.length ?? 0})
+                   Список гостей ({currentGuestEvent?.guests.reduce((s, g) => s + Math.max(1, g.guestCount), 0) ?? 0})
                 </p>
                 {(currentGuestEvent?.guests ?? []).map((guest) =>
                   editingGuest?.guest.id === guest.id ? (
@@ -375,7 +382,7 @@ export default function EventsPage() {
                       <div>
                         <label className="block text-xs text-admin-muted mb-1">Аватар</label>
                         <div className="flex gap-1.5 flex-wrap">
-                          {['🙂','😎','🥳','🎉','💝','🎀','🌸','✨','🦄','🐱','🐶','🌟'].map(e => (
+                          {EMOJI_OPTIONS.map(e => (
                             <button key={e} type="button" onClick={() => setEditEmoji(e)}
                               className={`w-7 h-7 rounded-lg text-base flex items-center justify-center transition-all
                                 ${editEmoji === e
@@ -464,6 +471,17 @@ export default function EventsPage() {
                         className="p-1.5 rounded-lg text-admin-muted hover:text-brand-violet hover:bg-brand-purple/10 transition-all"
                       >
                         <Eye size={14} />
+                      </a>
+
+                      {/* Chat */}
+                      <a
+                        href={`/invite/${guest.token}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Чат события"
+                        className="p-1.5 rounded-lg text-admin-muted hover:text-sky-400 hover:bg-sky-400/10 transition-all"
+                      >
+                        <MessageCircle size={14} />
                       </a>
 
                       <button

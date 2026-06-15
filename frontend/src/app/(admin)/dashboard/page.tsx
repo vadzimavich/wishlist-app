@@ -20,7 +20,7 @@ export default function DashboardPage() {
   const { data: events = [] } = useQuery({ queryKey: ['events'], queryFn: eventsApi.getEvents })
   const { data: items = [] } = useQuery({ queryKey: ['wishlist'], queryFn: wishlistApi.getItems })
 
-  const totalGuests = events.reduce((acc, e) => acc + e.guests.length, 0)
+  const totalGuests = events.reduce((acc, e) => acc + e.guests.reduce((s, g) => s + Math.max(1, g.guestCount), 0), 0)
   const claimedItems = items.filter(i => i.status !== 'Available').length
   const upcomingEvents = events.filter(e => new Date(e.date) > new Date())
 
@@ -78,7 +78,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <span className="text-xs text-admin-muted bg-admin-elevated px-2 py-1 rounded-full">
-                    {event.guests.length} гостей
+                    {event.guests.reduce((s, g) => s + Math.max(1, g.guestCount), 0)} гостей
                   </span>
                 </div>
               ))}

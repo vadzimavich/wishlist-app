@@ -17,6 +17,12 @@ export function useWishlistRealtime({ eventId, onGuestRsvpUpdated, onGuestEmojiU
   const connectionRef = useRef<HubConnection | null>(null)
   const { updateItemStatus } = useWishlistStore()
 
+  // Store callbacks in refs to avoid stale closures in SignalR handlers
+  const onGuestRsvpUpdatedRef = useRef(onGuestRsvpUpdated)
+  onGuestRsvpUpdatedRef.current = onGuestRsvpUpdated
+  const onGuestEmojiUpdatedRef = useRef(onGuestEmojiUpdated)
+  onGuestEmojiUpdatedRef.current = onGuestEmojiUpdated
+
   useEffect(() => {
     if (!eventId) return
 
@@ -48,11 +54,11 @@ export function useWishlistRealtime({ eventId, onGuestRsvpUpdated, onGuestEmojiU
     })
 
     connection.on('GuestRsvpUpdated', (guest: GuestPublic) => {
-      onGuestRsvpUpdated?.(guest)
+      onGuestRsvpUpdatedRef.current?.(guest)
     })
 
     connection.on('GuestEmojiUpdated', (guest: GuestPublic) => {
-      onGuestEmojiUpdated?.(guest)
+      onGuestEmojiUpdatedRef.current?.(guest)
     })
 
     // ── Запуск подключения ────────────────────────────────────────────
