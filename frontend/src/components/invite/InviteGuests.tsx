@@ -17,8 +17,10 @@ interface Props {
 }
 
 const MARGIN = 50
-const GRID_SPACING_X = 160  // horizontal cell spacing (stretched)
-const GRID_SPACING_Y = 100   // vertical cell spacing
+// Triangular / hex-grid spacing — equilateral triangles
+// Vertical: spacingY = spacingX * sqrt(3)/2  (≈ 0.866)
+const GRID_SPACING_X = 160
+const GRID_SPACING_Y = Math.round(GRID_SPACING_X * Math.sqrt(3) / 2) // 139
 
 const containerVariants = {
   hidden: {},
@@ -35,6 +37,64 @@ const EMOJI_PRESETS = [
   '🦊', '🐼', '🦄', '🌈', '🍀', '🏆', '🎪', '🚀',
 ]
 
+function buildCenteredRows(count: number, maxPerRow = 4): number[] {
+  if (count <= 0) return []
+  if (count <= maxPerRow) return [count]
+
+  // Try symmetric 3-row [a, b, a] with middle peak
+  for (let b = Math.min(maxPerRow, count - 2); b >= 3; b--) {
+    const remaining = count - b
+    if (remaining % 2 === 0) {
+      const a = remaining / 2
+      if (a >= 1 && a <= maxPerRow) {
+        return [a, b, a]
+      }
+    }
+  }
+
+  // 2 rows: [ceil(n/2), floor(n/2)]
+  if (count <= maxPerRow * 2) {
+    return [Math.ceil(count / 2), Math.floor(count / 2)]
+  }
+
+  // 4+ rows: build centered pyramid from middle outward
+  const numRows = Math.ceil(count / maxPerRow)
+  const middleIdx = Math.floor(numRows / 2)
+  const pattern: number[] = new Array(numRows).fill(0)
+  pattern[middleIdx] = maxPerRow
+  let remaining = count - maxPerRow
+  let left = middleIdx - 1
+  let right = middleIdx + 1
+
+  while (remaining > 0) {
+    if (right < numRows) {
+      const add = Math.min(maxPerRow, remaining)
+      pattern[right] = add
+      remaining -= add
+      right++
+    }
+    if (remaining > 0 && left >= 0) {
+      const add = Math.min(maxPerRow, remaining)
+      pattern[left] = add
+      remaining -= add
+      left--
+    }
+  }
+
+  return pattern
+}
+
+function idBasedJitter(id: string, amplitude = 5): { dx: number; dy: number } {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = ((hash << 5) - hash) + id.charCodeAt(i)
+    hash |= 0
+  }
+  const angle = (hash % 360) * (Math.PI / 180)
+  const dist = (Math.abs(hash >> 8) % 100) / 100 * amplitude
+  return { dx: Math.cos(angle) * dist, dy: Math.sin(angle) * dist }
+}
+
 export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestToken, onEmojiUpdate }: Props) {
   const graphRef = useRef<HTMLDivElement>(null)
   const [springParams, setSpringParams] = useState({ tension: 170, friction: 26, mass: 1, minDistance: 110 })
@@ -49,14 +109,56 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
   const [isMobile, setIsMobile] = useState(false)
   const isMobileRef = useRef(false)
 
+  const [visualCenterId, setVisualCenterId] = useState<string | null>(null)
+  const visualCenterIdRef = useRef<string | null>(null)
+
   const visibleGuests = useMemo(() => guests.filter(g => g.rsvpStatus !== 'NotAttending'), [guests])
   const totalInvited = useMemo(() => guests.reduce((sum, g) => sum + Math.max(1, g.guestCount), 0), [guests])
   const totalAttending = useMemo(
     () => guests.filter(g => g.rsvpStatus === 'Attending').reduce((sum, g) => sum + Math.max(1, g.guestCount), 0),
     [guests]
   )
-  const orbitingGuests = useMemo(() => visibleGuests.filter(g => g.id !== currentGuestId), [visibleGuests, currentGuestId])
-  const centerGuest = useMemo(() => visibleGuests.find(g => g.id === currentGuestId), [visibleGuests, currentGuestId])
+
+  // Visual center: current guest if visible, otherwise a random stand-in.
+  // Uses both state and ref so the grid never flickers empty on decline.
+  const centerGuest = useMemo((): GuestPublic | undefined => {
+    const match = visibleGuests.find(g => g.id === currentGuestId)
+    if (match) {
+      visualCenterIdRef.current = null
+      return match
+    }
+    if (visibleGuests.length === 0) return undefined
+    // Try state first, then ref, then pick immediately
+    if (visualCenterId) {
+      const fromState = visibleGuests.find(g => g.id === visualCenterId)
+      if (fromState) return fromState
+    }
+    const refId = visualCenterIdRef.current
+    if (refId) {
+      const fromRef = visibleGuests.find(g => g.id === refId)
+      if (fromRef) return fromRef
+    }
+    // First time — pick immediately so render never sees undefined
+    const pick = visibleGuests[Math.floor(Math.random() * visibleGuests.length)]
+    visualCenterIdRef.current = pick.id
+    setTimeout(() => setVisualCenterId(pick.id), 0)
+    return pick
+  }, [visibleGuests, currentGuestId, visualCenterId])
+
+  const orbitingGuests = useMemo(() => {
+    return visibleGuests.filter(g => g.id !== currentGuestId)
+  }, [visibleGuests, currentGuestId])
+
+  // Sync visualCenterId to ref when state changes
+  useEffect(() => { visualCenterIdRef.current = visualCenterId }, [visualCenterId])
+
+  // When current guest comes back, reset visualCenterId
+  useEffect(() => {
+    if (visibleGuests.some(g => g.id === currentGuestId)) {
+      if (visualCenterId !== null) setVisualCenterId(null)
+    }
+  }, [visibleGuests, currentGuestId])
+
   const orbitIds = useMemo(() => orbitingGuests.map(g => g.id), [orbitingGuests])
   const allIds = useMemo(() => (centerGuest ? [centerGuest.id, ...orbitIds] : orbitIds), [centerGuest, orbitIds])
 
@@ -71,38 +173,80 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
     config: { tension: 80, friction: 28, mass: 2 },
   }))
 
-  function computeGridLayout(count: number, cx: number, cy: number): { x: number; y: number }[] {
+  function computeGridLayout(
+    count: number,
+    cx: number,
+    cy: number,
+    spacingX: number = GRID_SPACING_X,
+    spacingY: number = GRID_SPACING_Y
+  ): { x: number; y: number }[] {
     if (count <= 0) return []
 
-    // Build a grid large enough to hold all orbiting guests
-    // Exclude the center cell (0,0) so orbiting guests don't overlap with the center guest
+    // Generate hex-ring cells up to a bounding radius, then sort by
+    // visual distance (primary) and angle (secondary). This guarantees
+    // a symmetric figure for ANY count — complete rings → hexagons,
+    // partial rings → evenly-spread around the center.
+    const maxRing = Math.ceil((-3 + Math.sqrt(9 + 12 * count)) / 6) + 1
+    const allCells: { x: number; y: number; distSq: number; angle: number }[] = []
 
-    const halfSize = Math.ceil(Math.sqrt(count + 1)) + 2
-    const cells: { col: number; row: number; distSq: number }[] = []
+    // Hex axial → pixel
+    const toX = (q: number, r: number) => spacingX * (q + r / 2)
+    const toY = (q: number, r: number) => spacingY * r
 
-    for (let row = -halfSize; row <= halfSize; row++) {
-      for (let col = -halfSize; col <= halfSize; col++) {
-        // Skip the center cell — it's reserved for the current guest
-        if (col === 0 && row === 0) continue
-        const distSq = col * col + row * row
-        cells.push({ col, row, distSq })
+    // Clockwise direction vectors for hex ring walk
+    const dirs: [number, number][] = [[0, -1], [-1, 0], [-1, 1], [0, 1], [1, 0], [1, -1]]
+
+    for (let ring = 1; ring <= maxRing; ring++) {
+      let q = ring, r = 0
+      for (let side = 0; side < 6; side++) {
+        const [dq, dr] = dirs[side]
+        for (let step = 0; step < ring; step++) {
+          const x = toX(q, r)
+          const y = toY(q, r)
+          allCells.push({ x, y, distSq: x * x + y * y, angle: Math.atan2(y, x) })
+          q += dq
+          r += dr
+        }
       }
     }
 
-    // Sort by distance from center (fill closest first!)
-    cells.sort((a, b) => a.distSq - b.distSq)
+    // Sort by visual distance, then by angle for equal-distance cells
+    allCells.sort((a, b) => a.distSq - b.distSq || a.angle - b.angle)
 
-    // Take only what we need
-    const selected = cells.slice(0, count)
+    const selected = allCells.slice(0, count)
 
-    // Convert to screen coordinates with rhombus row offset
-    return selected.map(({ col, row }) => {
-      const halfOffset = (row % 2) * (GRID_SPACING_X / 2) // odd rows shifted right
-      return {
-        x: cx + col * GRID_SPACING_X + halfOffset,
-        y: cy + row * GRID_SPACING_Y,
-      }
-    })
+    // Small pseudo-random jitter (±5px) so nodes aren't perfectly aligned
+    const JITTER = 5
+    return selected.map((p, i) => ({
+      x: cx + p.x + Math.sin(i * 137.5 + 42) * JITTER,
+      y: cy + p.y + Math.cos(i * 97.3 + 13) * JITTER,
+    }))
+  }
+
+  function computeAdaptiveSpacing(
+    count: number,
+    containerW: number,
+    containerH: number,
+    padding: number
+  ): { spacingX: number; spacingY: number } {
+    // Compute how many hex rings are needed to hold `count` orbiting cells
+    // Hex rings complete: ring 1 = 6, ring 2 = 18, ring 3 = 36, ... ring N = 3*N*(N+1)
+    const rings = Math.ceil((-3 + Math.sqrt(9 + 12 * count)) / 6)
+
+    // The furthest cell from center is at axial distance = `rings`
+    // x-extent: spacingX * rings  (at position (rings, 0))
+    // y-extent: spacingY * rings  (at position (0, rings))
+    const availW = containerW - padding * 2
+    const availH = containerH - padding * 2
+
+    // Clamp spacing so the grid fits in both dimensions
+    const maxSpacingX = rings > 0 ? Math.min(availW / (2 * rings), availH / (2 * rings * (Math.sqrt(3) / 2))) : GRID_SPACING_X
+    const spacingX = Math.max(100, Math.min(GRID_SPACING_X, maxSpacingX))
+
+    // Y spacing follows equilateral ratio
+    const spacingY = Math.max(85, Math.min(GRID_SPACING_Y, spacingX * Math.sqrt(3) / 2))
+
+    return { spacingX, spacingY }
   }
 
   useEffect(() => {
@@ -114,15 +258,43 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
       const w = el.offsetWidth || 800
       const h = 420
       const cx = w / 2, cy = h / 2
+      const padding = 40
 
       if (orbitingGuests.length > 0) {
-        const positions = computeGridLayout(orbitingGuests.length, cx, cy)
-        homePositionsRef.current = positions
-        api.start(i => ({
-          x: positions[i].x,
-          y: positions[i].y,
-          immediate: true,
-        }))
+        // Adaptive spacing so the grid fills the container without overflowing
+        const { spacingX, spacingY } = computeAdaptiveSpacing(
+          orbitingGuests.length, w, h, padding
+        )
+        const positions = computeGridLayout(orbitingGuests.length, cx, cy, spacingX, spacingY)
+
+        // Verify positions fit and scale down if needed (double-check)
+        let maxRx = 0, maxRy = 0
+        for (const p of positions) {
+          maxRx = Math.max(maxRx, Math.abs(p.x - cx))
+          maxRy = Math.max(maxRy, Math.abs(p.y - cy))
+        }
+        const maxAllowedX = cx - padding
+        const maxAllowedY = (h / 2) - padding
+        const scaleX = maxRx > 0 ? Math.min(1, maxAllowedX / maxRx) : 1
+        const scaleY = maxRy > 0 ? Math.min(1, maxAllowedY / maxRy) : 1
+        const scale = Math.min(scaleX, scaleY)
+
+        if (scale < 1) {
+          // Recompute with scaled spacing
+          const scaled = computeGridLayout(
+            orbitingGuests.length, cx, cy,
+            spacingX * scale, spacingY * scale
+          )
+          homePositionsRef.current = scaled
+          api.start(i => ({
+            x: scaled[i].x, y: scaled[i].y, immediate: true,
+          }))
+        } else {
+          homePositionsRef.current = positions
+          api.start(i => ({
+            x: positions[i].x, y: positions[i].y, immediate: true,
+          }))
+        }
       }
 
       if (centerGuest) {
@@ -137,7 +309,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
     const ro = new ResizeObserver(() => measure())
     ro.observe(el)
     return () => ro.disconnect()
-  }, [allIds, orbitingGuests.length, centerGuest?.id])
+  }, [allIds, orbitingGuests.length, centerGuest?.id, isMobile])
 
   // Fetch shared contacts on mount
   useEffect(() => {
@@ -272,9 +444,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
     })
   }, [api])
 
-  function renderMobileModals() {
-    if (!isMobile) return null
-
+  function renderModals() {
     const contact = contactPopupGuest ? getSharedContact(contactPopupGuest) : null
 
     return (
@@ -377,9 +547,74 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
     )
   }
 
-  // === MOBILE VIEW ===
+  // ── Mobile: простая сетка 4 колонки ─────────────────────────────────
+  //   Центральный гость сверху, остальные — в grid-cols-4
+  //
+  const MOBILE_NODE_SIZE = 50
+  const MOBILE_CENTER_SIZE = 60
+
+  function renderMobileNode(guest: GuestPublic, isCurrent: boolean, nodeSize: number) {
+    const isAtt = guest.rsvpStatus === 'Attending'
+    const hasContact = guest.isContactShared
+    const bgGrad = isAtt
+      ? 'linear-gradient(135deg,rgba(74,222,128,0.25),rgba(74,222,128,0.08))'
+      : 'linear-gradient(135deg,rgba(107,47,224,0.3),rgba(155,89,245,0.12))'
+    const borderColor = isAtt ? 'rgba(74,222,128,0.5)' : 'rgba(155,89,245,0.35)'
+    const glowColor = isAtt ? 'rgba(74,222,128,0.15)' : 'rgba(155,89,245,0.08)'
+
+    return (
+      <div className="flex flex-col items-center gap-1">
+        <div
+          className="flex items-center justify-center rounded-full relative cursor-pointer transition-transform active:scale-95"
+          style={{
+            width: nodeSize,
+            height: nodeSize,
+            background: bgGrad,
+            border: `2px solid ${borderColor}`,
+            boxShadow: `0 0 12px ${glowColor}${isCurrent ? `, 0 0 28px ${glowColor}` : ''}`,
+          }}
+          onClick={(e) => {
+            if (isCurrent) {
+              e.stopPropagation()
+              setShowEmojiPicker(prev => !prev)
+            } else if (hasContact) {
+              handleContactClick(guest.id)
+            }
+          }}
+        >
+          <span className={`leading-none select-none ${isCurrent ? 'text-2xl' : 'text-xl'}`}>
+            {guest.emoji || '🙂'}
+          </span>
+          {hasContact && (
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-brand-violet/80
+                            flex items-center justify-center shadow-lg ring-1 ring-brand-deep">
+              <Phone size={8} className="text-white" />
+            </div>
+          )}
+        </div>
+        <div className="text-center">
+          <span className={`block font-medium leading-tight ${isCurrent ? 'text-sm text-brand-pearl' : 'text-xs text-brand-pearl/60'}`}>
+            {guest.name}
+          </span>
+          {isCurrent && (
+            <span className="text-[10px] text-brand-violet font-normal">
+              {currentGuestCount > 1 ? '(вы)' : '(ты)'}
+            </span>
+          )}
+          {!isCurrent && (
+            <span className={`block text-[10px] mt-0.5 ${isAtt ? 'text-success/60' : 'text-brand-pearl/20'}`}>
+              {isAtt ? 'Придёт' : 'Ожидается'}
+            </span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+
   if (isMobile) {
-    const sortedGuests = [centerGuest, ...orbitingGuests].filter(Boolean) as GuestPublic[]
+    const orbiting = orbitingGuests
+    const center = centerGuest
 
     return (
       <section className="relative z-10 overflow-hidden py-12 sm:py-16">
@@ -405,75 +640,35 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
           </motion.p>
         </div>
 
-        <div className="px-4 mx-auto max-w-md space-y-3">
-          {sortedGuests.map(guest => {
-            const isCurrent = guest.id === currentGuestId
-            const isAtt = guest.rsvpStatus === 'Attending'
-            const hasContact = guest.isContactShared
-            const circleSize = isCurrent ? 56 : 48
-            const bgGrad = isAtt
-              ? 'linear-gradient(135deg,rgba(74,222,128,0.25),rgba(74,222,128,0.08))'
-              : 'linear-gradient(135deg,rgba(107,47,224,0.3),rgba(155,89,245,0.12))'
-            const borderColor = isAtt ? 'rgba(74,222,128,0.5)' : 'rgba(155,89,245,0.35)'
-            const glowColor = isAtt ? 'rgba(74,222,128,0.15)' : 'rgba(155,89,245,0.08)'
+        <div className="px-4 mx-auto max-w-sm">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-40px' }}
+            className="flex flex-col items-center gap-3"
+          >
+            {/* ── Center node ── */}
+            {center && (
+              <motion.div key={`c-${center.id}`} variants={nodeVariants}>
+                {renderMobileNode(center, center.id === currentGuestId, MOBILE_CENTER_SIZE)}
+              </motion.div>
+            )}
 
-            return (
-              <div
-                key={guest.id}
-                className="flex items-center gap-3 bg-brand-deep/50 rounded-xl p-3 border border-brand-violet/10
-                           transition-colors hover:border-brand-violet/25"
-                style={isAtt ? { borderColor: 'rgba(74,222,128,0.25)' } : undefined}
-                onClick={() => { if (hasContact) handleContactClick(guest.id) }}
-              >
-                {/* Emoji circle */}
-                <div
-                  className="flex items-center justify-center rounded-full shrink-0 relative"
-                  style={{
-                    width: circleSize,
-                    height: circleSize,
-                    background: bgGrad,
-                    border: `2px solid ${borderColor}`,
-                    boxShadow: `0 0 12px ${glowColor}`,
-                  }}
-                  onClick={(e) => {
-                    if (isCurrent) {
-                      e.stopPropagation()
-                      setShowEmojiPicker(prev => !prev)
-                    }
-                  }}
-                >
-                  <span className="text-lg leading-none select-none">{guest.emoji || '🙂'}</span>
-                  {/* Contact icon */}
-                  {hasContact && (
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-brand-violet/80
-                                    flex items-center justify-center shadow-lg">
-                      <Phone size={8} className="text-white" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Name + RSVP */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className={`font-medium truncate ${isCurrent ? 'text-brand-pearl text-sm' : 'text-brand-pearl/70 text-sm'}`}>
-                      {guest.name}
-                    </span>
-                    {isCurrent && (
-                      <span className="text-[10px] font-normal text-brand-violet shrink-0">
-                        ({currentGuestCount > 1 ? 'вы' : 'ты'})
-                      </span>
-                    )}
-                  </div>
-                  <span className={`text-xs ${isAtt ? 'text-success/70' : 'text-brand-pearl/30'}`}>
-                    {isAtt ? 'Придёт' : 'Ожидается'}
-                  </span>
-                </div>
+            {/* ── Orbiting nodes in a 4-column grid ── */}
+            {orbiting.length > 0 && (
+              <div className="grid grid-cols-4 gap-3 w-full place-items-center">
+                {orbiting.map(guest => (
+                  <motion.div key={guest.id} variants={nodeVariants}>
+                    {renderMobileNode(guest, false, MOBILE_NODE_SIZE)}
+                  </motion.div>
+                ))}
               </div>
-            )
-          })}
+            )}
+          </motion.div>
         </div>
 
-        {renderMobileModals()}
+        {renderModals()}
       </section>
     )
   }
@@ -643,40 +838,6 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
                           </motion.div>
                         )
                       })()}
-                      {/* Emoji picker popover */}
-                      {showEmojiPicker && centerGuest.id === currentGuestId && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.9, y: -4 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          className="absolute z-50 top-full mt-2 left-1/2 -translate-x-1/2
-                                     bg-brand-deep/95 border border-brand-violet/20 rounded-xl
-                                     p-2 shadow-2xl backdrop-blur-sm"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="grid grid-cols-6 gap-1.5 max-w-[260px]">
-                            {EMOJI_PRESETS.map(emoji => (
-                              <button
-                                key={emoji}
-                                onClick={async (e) => {
-                                  e.stopPropagation()
-                                  try {
-                                    await guestsApi.updateEmoji(guestToken, emoji)
-                                    onEmojiUpdate?.(centerGuest.id, emoji)
-                                    setShowEmojiPicker(false)
-                                  } catch {
-                                    // Silently fail — revert will happen on next fetch
-                                  }
-                                }}
-                                className={`w-9 h-9 flex items-center justify-center rounded-lg text-xl
-                                  hover:bg-brand-violet/20 transition-colors
-                                  ${centerGuest.emoji === emoji ? 'ring-2 ring-brand-violet' : ''}`}
-                              >
-                                {emoji}
-                              </button>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
                     </div>
                   </animated.div>
                 </motion.div>
@@ -686,7 +847,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
         )}
       </div>
 
-      {renderMobileModals()}
+      {renderModals()}
     </section>
   )
 }
