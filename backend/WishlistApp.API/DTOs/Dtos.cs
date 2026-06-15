@@ -118,6 +118,10 @@ public record ShareContactRequest(
     bool IsShared
 );
 
+public record UpdateEmojiRequest(
+    [Required, MaxLength(10)] string Emoji
+);
+
 public record SharedContactDto(
     Guid GuestId,
     string Name,

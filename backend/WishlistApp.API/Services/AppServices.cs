@@ -206,6 +206,7 @@ public interface IGuestService
     Task<GuestDto> UpdateRsvpAsync(string token, RsvpRequest request);
     Task<GuestSelfDto> UpdateContactAsync(string token, string? telegram, string? phone);
     Task<GuestSelfDto> ToggleContactShareAsync(string token, bool isShared);
+    Task<GuestSelfDto> UpdateEmojiAsync(string token, string emoji);
     Task<List<SharedContactDto>> GetSharedContactsAsync(string token);
 }
 
@@ -343,6 +344,20 @@ public class GuestService(AppDbContext db, IConfiguration config, IWishlistHubSe
         if (telegram is not null) guest.Telegram = telegram.Trim();
         if (phone is not null) guest.Phone = phone.Trim();
 
+        await db.SaveChangesAsync();
+
+        return new GuestSelfDto(guest.Id, guest.Name, guest.Emoji, guest.Token,
+            guest.RsvpStatus, guest.RsvpNote, guest.GuestCount,
+            guest.Telegram, guest.Phone, guest.IsContactShared);
+    }
+
+    public async Task<GuestSelfDto> UpdateEmojiAsync(string token, string emoji)
+    {
+        var guest = await db.Guests
+            .FirstOrDefaultAsync(g => g.Token == token)
+            ?? throw new KeyNotFoundException("Гость не найден.");
+
+        guest.Emoji = string.IsNullOrWhiteSpace(emoji) ? "🙂" : emoji.Trim();
         await db.SaveChangesAsync();
 
         return new GuestSelfDto(guest.Id, guest.Name, guest.Emoji, guest.Token,

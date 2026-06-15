@@ -44,6 +44,7 @@ public class WishlistHub : Hub
     // connection.on('ClaimCancelled', (item: WishlistItemDto) => {...})
     // connection.on('GuestRsvpUpdated', (guest: GuestPublicDto) => {...})
     // connection.on('GuestContactUpdated', (contact: SharedContactDto) => {...})
+    // connection.on('GuestEmojiUpdated', (guest: GuestPublicDto) => {...})
     // connection.on('WishlistItemUpdated', (item: WishlistItemDto) => {...})
     // connection.on('ActivityUpdated', (activity: ActivityEventDto) => {...})
 }
@@ -58,6 +59,7 @@ public interface IWishlistHubService
     Task NotifyClaimCancelledAsync(Guid eventId, WishlistItemDto item);
     Task NotifyGuestRsvpUpdatedAsync(Guid eventId, GuestPublicDto guest);
     Task NotifyGuestContactUpdatedAsync(Guid eventId, SharedContactDto contact);
+    Task NotifyGuestEmojiUpdatedAsync(Guid eventId, GuestPublicDto guest);
     Task NotifyWishlistItemUpdatedAsync(Guid eventId, WishlistItemDto item);
     Task NotifyActivityUpdatedAsync(Guid eventId, ActivityEventDto activity);
 }
@@ -80,6 +82,9 @@ public class WishlistHubService(IHubContext<WishlistHub> hubContext) : IWishlist
 
     public Task NotifyGuestContactUpdatedAsync(Guid eventId, SharedContactDto contact) =>
         hubContext.Clients.Group(GroupName(eventId)).SendAsync("GuestContactUpdated", contact);
+
+    public Task NotifyGuestEmojiUpdatedAsync(Guid eventId, GuestPublicDto guest) =>
+        hubContext.Clients.Group(GroupName(eventId)).SendAsync("GuestEmojiUpdated", guest);
 
     public Task NotifyWishlistItemUpdatedAsync(Guid eventId, WishlistItemDto item) =>
         hubContext.Clients.Group(GroupName(eventId)).SendAsync("WishlistItemUpdated", item);

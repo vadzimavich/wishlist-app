@@ -246,6 +246,26 @@ public class GuestsController(IGuestService guestService, IWishlistHubService hu
     }
 
     /// <summary>
+    /// Гость меняет свой emoji (аватар).
+    /// </summary>
+    [HttpPut("{token}/emoji")]
+    [AllowAnonymous]
+    public async Task<IActionResult> UpdateEmoji(string token, [FromBody] UpdateEmojiRequest request)
+    {
+        var guest = await guestService.UpdateEmojiAsync(token, request.Emoji);
+
+        var pageDto = await guestService.GetInvitePageAsync(token);
+        await hub.NotifyGuestEmojiUpdatedAsync(
+            pageDto.EventId,
+            new GuestPublicDto(guest.Id, guest.Name, guest.Emoji, guest.RsvpStatus, guest.GuestCount,
+                guest.IsContactShared ? guest.Telegram : null,
+                guest.IsContactShared ? guest.Phone : null)
+        );
+
+        return ApiOk(guest);
+    }
+
+    /// <summary>
     /// Получить список контактов других гостей события, кто поделился.
     /// </summary>
     [HttpGet("{token}/contacts")]

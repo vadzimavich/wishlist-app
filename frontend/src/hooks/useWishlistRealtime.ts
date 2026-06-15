@@ -10,9 +10,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000'
 interface UseWishlistRealtimeOptions {
   eventId: string | undefined
   onGuestRsvpUpdated?: (guest: GuestPublic) => void
+  onGuestEmojiUpdated?: (guest: GuestPublic) => void
 }
 
-export function useWishlistRealtime({ eventId, onGuestRsvpUpdated }: UseWishlistRealtimeOptions) {
+export function useWishlistRealtime({ eventId, onGuestRsvpUpdated, onGuestEmojiUpdated }: UseWishlistRealtimeOptions) {
   const connectionRef = useRef<HubConnection | null>(null)
   const { updateItemStatus } = useWishlistStore()
 
@@ -48,6 +49,10 @@ export function useWishlistRealtime({ eventId, onGuestRsvpUpdated }: UseWishlist
 
     connection.on('GuestRsvpUpdated', (guest: GuestPublic) => {
       onGuestRsvpUpdated?.(guest)
+    })
+
+    connection.on('GuestEmojiUpdated', (guest: GuestPublic) => {
+      onGuestEmojiUpdated?.(guest)
     })
 
     // ── Запуск подключения ────────────────────────────────────────────

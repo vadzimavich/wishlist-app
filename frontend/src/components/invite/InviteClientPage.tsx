@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { useQuery } from '@tanstack/react-query'
 import { guestsApi } from '@/lib/api'
-import { InvitePage, GuestPublic } from '@/types'
+import { InvitePage, GuestPublic, GuestSelf } from '@/types'
 import { useWishlistStore } from '@/lib/store'
 import { useWishlistRealtime } from '@/hooks/useWishlistRealtime'
 import { InviteHero } from './InviteHero'
@@ -57,6 +57,14 @@ export function InviteClientPage({ initialData, token }: Props) {
     onGuestRsvpUpdated: (updatedGuest) => {
       setGuests(prev =>
         prev.map(g => g.id === updatedGuest.id ? updatedGuest : g)
+      )
+    },
+    onGuestEmojiUpdated: (updatedGuest) => {
+      setGuests(prev =>
+        prev.map(g => g.id === updatedGuest.id
+          ? { ...g, emoji: updatedGuest.emoji }
+          : g
+        )
       )
     },
   })
@@ -173,7 +181,17 @@ export function InviteClientPage({ initialData, token }: Props) {
       <InviteDetails date={page.eventDate} description={page.eventDescription} show="details" />
 
       {/* Guests */}
-      <InviteGuests guests={guests} currentGuestId={page.currentGuest.id} currentGuestCount={page.currentGuest.guestCount} guestToken={token} />
+      <InviteGuests
+        guests={guests}
+        currentGuestId={page.currentGuest.id}
+        currentGuestCount={page.currentGuest.guestCount}
+        guestToken={token}
+        onEmojiUpdate={(guestId, emoji) => {
+          setGuests(prev =>
+            prev.map(g => g.id === guestId ? { ...g, emoji } : g)
+          )
+        }}
+      />
 
       {/* Wishlist */}
       <InviteWishlist

@@ -6,12 +6,14 @@ import { useSprings, useSpring, animated } from '@react-spring/web'
 import { Phone, MessageCircle, Users, X } from 'lucide-react'
 import { GuestPublic } from '@/types'
 import { useContactStore } from '@/lib/stores/contactStore'
+import { guestsApi } from '@/lib/api'
 
 interface Props {
   guests: GuestPublic[]
   currentGuestId: string
   currentGuestCount: number
   guestToken: string
+  onEmojiUpdate?: (guestId: string, emoji: string) => void
 }
 
 const MARGIN = 50
@@ -27,7 +29,13 @@ const nodeVariants = {
   visible: { scale: 1, opacity: 1, transition: { type: 'spring', damping: 14, stiffness: 220 } },
 }
 
-export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestToken }: Props) {
+const EMOJI_PRESETS = [
+  '🎉', '🎂', '🎁', '🥳', '🥰', '😊', '🤗', '🦸‍♂️',
+  '🎸', '🏄‍♂️', '🎨', '🧩', '🌟', '🔥', '💪', '🧙‍♂️',
+  '🦊', '🐼', '🦄', '🌈', '🍀', '🏆', '🎪', '🚀',
+]
+
+export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestToken, onEmojiUpdate }: Props) {
   const graphRef = useRef<HTMLDivElement>(null)
   const [springParams, setSpringParams] = useState({ tension: 170, friction: 26, mass: 1, minDistance: 110 })
   const [initialized, setInitialized] = useState(false)
@@ -36,6 +44,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
   const hasMovedRef = useRef(false)
   const homePositionsRef = useRef<{ x: number; y: number }[]>([])
   const [contactPopupGuest, setContactPopupGuest] = useState<string | null>(null)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const contactStore = useContactStore()
 
   const visibleGuests = useMemo(() => guests.filter(g => g.rsvpStatus !== 'NotAttending'), [guests])
@@ -278,7 +287,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
         style={{ maxWidth: '660px', height: 420 }}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onClick={(e) => { if (e.target === graphRef.current) setContactPopupGuest(null) }}>
+        onClick={(e) => { if (e.target === graphRef.current) { setContactPopupGuest(null); setShowEmojiPicker(false) } }}>
         {initialized && (
           <motion.div variants={containerVariants} initial="hidden" whileInView="visible"
             viewport={{ once: true, margin: '-40px' }} className="relative w-full h-full">
@@ -370,7 +379,13 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
                     transform: 'translate(-50%, -50%)',
                     zIndex: 10,
                   }}
-                    onClick={() => hasContact && handleContactClick(centerGuest.id)}>
+                    onClick={() => {
+                      if (centerGuest.id === currentGuestId) {
+                        setShowEmojiPicker(prev => !prev)
+                      } else if (hasContact) {
+                        handleContactClick(centerGuest.id)
+                      }
+                    }}>
                     <div className="flex flex-col items-center gap-2 select-none">
                       <div className="flex items-center justify-center rounded-full relative"
                         style={{
@@ -417,6 +432,40 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
                           </motion.div>
                         )
                       })()}
+                      {/* Emoji picker popover */}
+                      {showEmojiPicker && centerGuest.id === currentGuestId && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9, y: -4 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          className="absolute z-50 top-full mt-2 left-1/2 -translate-x-1/2
+                                     bg-brand-deep/95 border border-brand-violet/20 rounded-xl
+                                     p-2 shadow-2xl backdrop-blur-sm"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="grid grid-cols-6 gap-1 max-w-[220px]">
+                            {EMOJI_PRESETS.map(emoji => (
+                              <button
+                                key={emoji}
+                                onClick={async (e) => {
+                                  e.stopPropagation()
+                                  try {
+                                    await guestsApi.updateEmoji(guestToken, emoji)
+                                    onEmojiUpdate?.(centerGuest.id, emoji)
+                                    setShowEmojiPicker(false)
+                                  } catch {
+                                    // Silently fail — revert will happen on next fetch
+                                  }
+                                }}
+                                className={`w-8 h-8 flex items-center justify-center rounded-lg text-lg
+                                  hover:bg-brand-violet/20 transition-colors
+                                  ${centerGuest.emoji === emoji ? 'ring-2 ring-brand-violet' : ''}`}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
                     </div>
                   </animated.div>
                 </motion.div>

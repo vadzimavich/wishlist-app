@@ -216,6 +216,11 @@ export const guestsApi = {
     return data.data
   },
 
+  updateEmoji: async (token: string, emoji: string): Promise<GuestSelf> => {
+    const { data } = await axios.put(`${API_URL}/api/guests/${token}/emoji`, { emoji })
+    return data.data
+  },
+
   getSharedContacts: async (token: string): Promise<SharedContact[]> => {
     const { data } = await axios.get(`${API_URL}/api/guests/${token}/contacts`)
     return data.data
