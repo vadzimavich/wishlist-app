@@ -1,6 +1,14 @@
 # ─── Build stage ──────────────────────────────────────────────────────────────
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM ubuntu:24.04 AS build
 WORKDIR /src
+
+# Install wget and .NET SDK 10.0 via official script (bypasses MCR rate limits)
+RUN apt-get update && apt-get install -y wget && \
+    wget -q https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
+    chmod +x dotnet-install.sh && \
+    ./dotnet-install.sh --channel 10.0 --install-dir /usr/share/dotnet && \
+    ln -s /usr/share/dotnet/dotnet /usr/local/bin/dotnet && \
+    rm -rf /var/lib/apt/lists/* dotnet-install.sh
 
 # Копируем только csproj для кеширования слоя restore
 COPY WishlistApp.API/WishlistApp.API.csproj WishlistApp.API/
@@ -14,10 +22,18 @@ RUN dotnet publish WishlistApp.API/WishlistApp.API.csproj \
     --no-restore
 
 # ─── Runtime stage ────────────────────────────────────────────────────────────
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM ubuntu:24.04 AS runtime
 WORKDIR /app
 
-# Устанавливаем русскую локаль и certifi
+# Install wget and ASP.NET Core Runtime 10.0 via official script
+RUN apt-get update && apt-get install -y wget && \
+    wget -q https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
+    chmod +x dotnet-install.sh && \
+    ./dotnet-install.sh --channel 10.0 --runtime aspnetcore --install-dir /usr/share/dotnet && \
+    ln -s /usr/share/dotnet/dotnet /usr/local/bin/dotnet && \
+    rm -rf /var/lib/apt/lists/* dotnet-install.sh
+
+# Устанавливаем локали и certifi (как было в оригинале)
 RUN apt-get update && apt-get install -y \
     locales \
     ca-certificates \
