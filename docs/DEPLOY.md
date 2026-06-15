@@ -92,7 +92,33 @@ dotnet ef database update --no-build
 
 ---
 
-## 4. GitHub Actions (CI/CD)
+## 4. Keep-alive (Vercel Cron)
+
+Render's free tier spins down the backend after 15 minutes of inactivity.  
+To prevent this, the frontend includes a Vercel Cron job that pings `/health` every 10 minutes.
+
+### Setup
+1. Deploy the frontend to Vercel (as above)
+2. Vercel automatically picks up `vercel.json` — the cron job is deployed automatically
+3. No additional configuration needed
+
+### Verify
+- After deployment, visit: `https://your-app.vercel.app/api/ping`
+- Expected response: `{ "ok": true, "backend": 200, "data": { "status": "ok", ... } }`
+
+### How it works
+- `vercel.json` defines a cron schedule (`*/10 * * * *`)
+- Vercel calls `GET /api/ping` every 10 minutes
+- The ping endpoint forwards the request to `<NEXT_PUBLIC_API_URL>/health`
+- This keeps the Render backend alive
+
+### Troubleshooting
+- If `/api/ping` returns `{ "ok": false }`, check that `NEXT_PUBLIC_API_URL` is set correctly in Vercel Environment Variables
+- The cron job is **free** on Vercel (1 job included in the free tier)
+
+---
+
+## 5. GitHub Actions (CI/CD)
 
 ```yaml
 # .github/workflows/deploy.yml
@@ -118,7 +144,7 @@ jobs:
 
 ---
 
-## 5. Переменные окружения — сводная таблица
+## 6. Переменные окружения — сводная таблица
 
 | Переменная | Где используется | Описание |
 |---|---|---|
@@ -132,7 +158,7 @@ jobs:
 
 ---
 
-## 6. Локальный запуск через Docker Compose
+## 7. Локальный запуск через Docker Compose
 
 ```bash
 # Скопируй и заполни .env
@@ -160,7 +186,7 @@ docker compose down -v
 
 ---
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 ### CORS ошибки
 - Проверь `AllowedOrigins` в Render (должен точно совпадать с URL Vercel, без слеша в конце)

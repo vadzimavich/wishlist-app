@@ -80,17 +80,29 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 services.AddAuthorization();
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
-var allowedOrigins = config["AllowedOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries)
-    ?? ["http://localhost:3000"];
-
 services.AddCors(opt =>
-    opt.AddDefaultPolicy(policy => policy
-        .WithOrigins(allowedOrigins)
-        .AllowAnyMethod()
-        .AllowAnyHeader()
-        .AllowCredentials()   // Нужно для SignalR и cookies
-    )
-);
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        opt.AddDefaultPolicy(policy => policy
+            .SetIsOriginAllowed(_ => true)  // Разрешить любой origin в dev
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials()
+        );
+    }
+    else
+    {
+        var allowedOrigins = config["AllowedOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            ?? ["http://localhost:3000"];
+        opt.AddDefaultPolicy(policy => policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials()
+        );
+    }
+});
 
 // ── SignalR ───────────────────────────────────────────────────────────────────
 services.AddSignalR(opt =>
@@ -140,14 +152,18 @@ if (config.GetValue<bool>("MigrateOnStartup", true))
     await db.Database.MigrateAsync();
 }
 
+app.UseCors();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(opt => opt.SwaggerEndpoint("/swagger/v1/swagger.json", "WishList API v1"));
+    app.UseSwaggerUI(opt => opt.SwaggerEndpoint("/swagger/v1/swagger.json", "WishList API v1"));   
+}
+else
+{
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
-app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 

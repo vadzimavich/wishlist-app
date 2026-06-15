@@ -7,19 +7,19 @@ import { useChatStore } from '@/lib/stores/chatStore'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000'
 
+const EVENT_CHAT_KEY = '__event__'
+
 interface UseChatRealtimeOptions {
   eventId: string
   guestToken: string
-  claimId?: string
 }
 
-export function useChatRealtime({ eventId, guestToken, claimId }: UseChatRealtimeOptions) {
+export function useChatRealtime({ eventId, guestToken }: UseChatRealtimeOptions) {
   const connectionRef = useRef<HubConnection | null>(null)
-  const chatKey = claimId || '__event__'
 
-  const messages = useChatStore((state) => state.messages[chatKey] || [])
+  const messages = useChatStore((state) => state.messages[EVENT_CHAT_KEY] || [])
   const loading = useChatStore((state) => state.loading)
-  const hasMore = useChatStore((state) => state.hasMore[chatKey] ?? true)
+  const hasMore = useChatStore((state) => state.hasMore[EVENT_CHAT_KEY] ?? true)
   const addMessage = useChatStore((state) => state.addMessage)
   const editMessage = useChatStore((state) => state.editMessage)
   const removeMessage = useChatStore((state) => state.removeMessage)
@@ -28,10 +28,7 @@ export function useChatRealtime({ eventId, guestToken, claimId }: UseChatRealtim
   useEffect(() => {
     if (!eventId || !guestToken) return
 
-    let hubUrl = `${API_URL}/hubs/chat?eventId=${eventId}&guestToken=${guestToken}`
-    if (claimId) {
-      hubUrl += `&claimId=${claimId}`
-    }
+    const hubUrl = `${API_URL}/hubs/chat?eventId=${eventId}&guestToken=${guestToken}`
 
     const connection = new HubConnectionBuilder()
       .withUrl(hubUrl, {
@@ -64,25 +61,19 @@ export function useChatRealtime({ eventId, guestToken, claimId }: UseChatRealtim
     })
 
     // Auto-load messages on mount
-    loadMessages(eventId, claimId, 0, 50)
+    loadMessages(eventId, undefined, 0, 50)
 
     return () => {
       connection.stop()
       connectionRef.current = null
     }
-  }, [eventId, guestToken, claimId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [eventId, guestToken]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Client → Server methods ───────────────────────────────────────────────
 
   const sendEventMessage = useCallback(async (text: string) => {
     if (connectionRef.current) {
       await connectionRef.current.invoke('SendEventMessage', text)
-    }
-  }, [])
-
-  const sendCollectiveMessage = useCallback(async (claimId: string, text: string) => {
-    if (connectionRef.current) {
-      await connectionRef.current.invoke('SendCollectiveMessage', claimId, text)
     }
   }, [])
 
@@ -100,12 +91,11 @@ export function useChatRealtime({ eventId, guestToken, claimId }: UseChatRealtim
 
   const loadMore = useCallback(() => {
     const currentCount = messages.length
-    loadMessages(eventId, claimId, currentCount, 50)
-  }, [eventId, claimId, messages.length, loadMessages])
+    loadMessages(eventId, undefined, currentCount, 50)
+  }, [eventId, messages.length, loadMessages])
 
   return {
     sendEventMessage,
-    sendCollectiveMessage,
     editMessage: editMessageAction,
     deleteMessage: deleteMessageAction,
     messages,

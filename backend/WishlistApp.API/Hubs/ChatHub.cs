@@ -29,7 +29,6 @@ public class ChatHub : Hub
         var query = httpContext?.Request.Query;
         var eventIdStr = query?["eventId"].ToString();
         var guestToken = query?["guestToken"].ToString();
-        var claimIdStr = query?["claimId"].ToString();
 
         if (string.IsNullOrEmpty(eventIdStr) || !Guid.TryParse(eventIdStr, out var eventId))
         {
@@ -66,11 +65,6 @@ public class ChatHub : Hub
 
         await Groups.AddToGroupAsync(Context.ConnectionId, $"event-chat-{eventId}");
 
-        if (!string.IsNullOrEmpty(claimIdStr) && Guid.TryParse(claimIdStr, out var claimId))
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, $"collective-chat-{claimId}");
-        }
-
         await base.OnConnectedAsync();
     }
 
@@ -98,19 +92,6 @@ public class ChatHub : Hub
         var eventId = (Guid)Context.Items["EventId"]!;
         var message = await _chatService.SaveMessage(eventId, guestId, text, null);
         await Clients.Group($"event-chat-{eventId}").SendAsync("MessageReceived", message);
-    }
-
-    /// <summary>
-    /// Гость отправляет сообщение в чат коллективного сбора.
-    /// </summary>
-    public async Task SendCollectiveMessage(Guid claimId, string text)
-    {
-        if (Context.Items["GuestId"] is not Guid guestId)
-            throw new HubException("Только гости могут отправлять сообщения.");
-
-        var eventId = (Guid)Context.Items["EventId"]!;
-        var message = await _chatService.SaveMessage(eventId, guestId, text, claimId);
-        await Clients.Group($"collective-chat-{claimId}").SendAsync("MessageReceived", message);
     }
 
     /// <summary>
