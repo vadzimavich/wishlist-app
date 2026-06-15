@@ -8,15 +8,18 @@ import { guestsApi } from '@/lib/api'
 import { GuestSelf, RsvpStatus } from '@/types'
 import { useContactStore } from '@/lib/stores/contactStore'
 
+import { MessageCircle } from 'lucide-react'
 import { ContactSharingModal } from './ContactSharingModal'
 import confetti from 'canvas-confetti'
 
 interface Props {
   guest: GuestSelf
   eventId: string
+  chatOpen?: boolean
+  onChatToggle?: () => void
 }
 
-export function InviteRsvpBar({ guest, eventId }: Props) {
+export function InviteRsvpBar({ guest, eventId, onChatToggle }: Props) {
   const qc = useQueryClient()
   const [note, setNote] = useState('')
   const [expanded, setExpanded] = useState(false)
@@ -99,37 +102,47 @@ export function InviteRsvpBar({ guest, eventId }: Props) {
         initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5, type: 'spring', damping: 20 }}
-        className="fixed bottom-0 inset-x-0 z-50 flex justify-center px-4 pb-3 pointer-events-none"
+        className="fixed bottom-0 inset-x-0 z-50 flex justify-center px-4 pb-3"
       >
-        <div className="liquid-glass px-5 py-3 flex items-center gap-4 pointer-events-auto
-                        shadow-2xl max-w-sm w-full">
-          <p className="text-brand-pearl/80 text-sm font-medium flex-1">
-            {isFormal ? 'Вы придёте?' : 'Ты придёшь?'}
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleRsvp('Attending')}
-              disabled={rsvpMutation.isPending}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 active:scale-95 ${
-                guest.rsvpStatus === 'Attending'
-                  ? 'bg-success/20 border border-success/30 text-success hover:bg-success/30'
-                  : 'bg-brand-pearl/5 border border-brand-pearl/10 text-brand-pearl/60 hover:bg-brand-pearl/10'
-              }`}
-            >
-              Да
-            </button>
-            <button
-              onClick={() => handleRsvp('NotAttending')}
-              disabled={rsvpMutation.isPending}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 active:scale-95 ${
-                guest.rsvpStatus === 'NotAttending'
-                  ? 'bg-brand-pearl/20 border border-brand-pearl/30 text-brand-pearl hover:bg-brand-pearl/30'
-                  : 'bg-brand-pearl/5 border border-brand-pearl/10 text-brand-pearl/60 hover:bg-brand-pearl/10'
-              }`}
-            >
-              Нет
-            </button>
+        <div className="flex items-center gap-2 pointer-events-auto">
+          <div className="liquid-glass px-5 py-3 flex items-center gap-4 shadow-2xl w-full sm:max-w-sm">
+            <p className="text-brand-pearl/80 text-sm font-medium whitespace-nowrap">
+              {isFormal ? 'Вы придёте?' : 'Ты придёшь?'}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleRsvp('Attending')}
+                disabled={rsvpMutation.isPending}
+                className={`min-w-[64px] px-4 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 active:scale-95 ${
+                  guest.rsvpStatus === 'Attending'
+                    ? 'bg-success/20 border border-success/30 text-success hover:bg-success/30'
+                    : 'bg-brand-pearl/5 border border-brand-pearl/10 text-brand-pearl/60 hover:bg-brand-pearl/10'
+                }`}
+              >
+                Да
+              </button>
+              <button
+                onClick={() => handleRsvp('NotAttending')}
+                disabled={rsvpMutation.isPending}
+                className={`min-w-[64px] px-4 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 active:scale-95 ${
+                  guest.rsvpStatus === 'NotAttending'
+                    ? 'bg-brand-pearl/20 border border-brand-pearl/30 text-brand-pearl hover:bg-brand-pearl/30'
+                    : 'bg-brand-pearl/5 border border-brand-pearl/10 text-brand-pearl/60 hover:bg-brand-pearl/10'
+                }`}
+              >
+                Нет
+              </button>
+            </div>
           </div>
+          <button
+            onClick={onChatToggle}
+            className="w-12 h-12 rounded-xl bg-brand-violet/20 border border-brand-violet/30 text-brand-violet
+                       hover:bg-brand-violet/30 hover:scale-105 active:scale-95 transition-all duration-200
+                       flex items-center justify-center shadow-2xl shrink-0"
+            aria-label="Чат события"
+          >
+            <MessageCircle size={22} />
+          </button>
         </div>
       </motion.div>
 

@@ -50,7 +50,11 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
   const isMobileRef = useRef(false)
 
   const visibleGuests = useMemo(() => guests.filter(g => g.rsvpStatus !== 'NotAttending'), [guests])
-  const attending = useMemo(() => guests.filter(g => g.rsvpStatus === 'Attending').length, [guests])
+  const totalInvited = useMemo(() => guests.reduce((sum, g) => sum + Math.max(1, g.guestCount), 0), [guests])
+  const totalAttending = useMemo(
+    () => guests.filter(g => g.rsvpStatus === 'Attending').reduce((sum, g) => sum + Math.max(1, g.guestCount), 0),
+    [guests]
+  )
   const orbitingGuests = useMemo(() => visibleGuests.filter(g => g.id !== currentGuestId), [visibleGuests, currentGuestId])
   const centerGuest = useMemo(() => visibleGuests.find(g => g.id === currentGuestId), [visibleGuests, currentGuestId])
   const orbitIds = useMemo(() => orbitingGuests.map(g => g.id), [orbitingGuests])
@@ -397,7 +401,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
             transition={{ duration: 0.4, delay: 0.08 }}
             className="text-brand-pearl/40 text-xs sm:text-sm mt-2"
           >
-            {guests.length} приглашено · {attending} придут
+            {totalInvited} приглашено · {totalAttending} придут
           </motion.p>
         </div>
 
@@ -486,7 +490,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
         <motion.p initial={{ opacity: 0, y: 8 }} whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.08 }}
           className="text-brand-pearl/40 text-xs sm:text-sm mt-2">
-          {guests.length} приглашено · {attending} придут
+          {totalInvited} приглашено · {totalAttending} придут
         </motion.p>
       </div>
 
@@ -649,7 +653,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
                                      p-2 shadow-2xl backdrop-blur-sm"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <div className="grid grid-cols-6 gap-1 max-w-[220px]">
+                          <div className="grid grid-cols-6 gap-1.5 max-w-[260px]">
                             {EMOJI_PRESETS.map(emoji => (
                               <button
                                 key={emoji}
@@ -663,7 +667,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
                                     // Silently fail — revert will happen on next fetch
                                   }
                                 }}
-                                className={`w-8 h-8 flex items-center justify-center rounded-lg text-lg
+                                className={`w-9 h-9 flex items-center justify-center rounded-lg text-xl
                                   hover:bg-brand-violet/20 transition-colors
                                   ${centerGuest.emoji === emoji ? 'ring-2 ring-brand-violet' : ''}`}
                               >
