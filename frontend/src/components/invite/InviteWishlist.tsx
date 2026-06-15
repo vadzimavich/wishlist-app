@@ -106,7 +106,7 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
   // ─── Empty state ──────────────────────────────────────────────────────────
   if (items.length === 0) {
     return (
-      <section className="relative z-10 px-4 py-20 max-w-2xl mx-auto text-center">
+      <section className="relative z-10 px-4 py-12 max-w-2xl mx-auto text-center">
         <Sparkles size={32} className="text-brand-pearl/20 mx-auto mb-3" />
         <p className="text-brand-pearl/40 text-sm">Подарков пока нет</p>
       </section>
@@ -114,7 +114,7 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
   }
 
   return (
-    <section ref={sectionRef} className="relative z-10 px-4 py-20 max-w-6xl mx-auto">
+    <section ref={sectionRef} className="relative z-10 px-4 py-12 max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h2 className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3">
           <Sparkles size={28} className="text-brand-violet shrink-0" />

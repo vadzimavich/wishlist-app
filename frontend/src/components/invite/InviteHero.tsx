@@ -211,7 +211,7 @@ export function InviteHero({
         className="relative z-10 text-center max-w-2xl mx-auto py-6"
       >
         {/* From host */}
-        <motion.div variants={item} className="mb-6">
+        <motion.div variants={item} className="mb-10">
           <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-sm text-brand-pearl/70">
             <span className="w-1.5 h-1.5 rounded-full bg-brand-violet animate-pulse-slow" />
             {hostName} приглашает {guestCount > 1 ? 'вас' : 'тебя'}
@@ -221,7 +221,7 @@ export function InviteHero({
         {/* Guest name */}
         <motion.p
           variants={item}
-          className="text-brand-champagne/80 text-lg md:text-xl mb-6 font-body"
+          className="text-brand-champagne/80 text-lg md:text-xl mb-10 font-body"
         >
           {guestCount > 1 ? 'Здравствуйте' : 'Привет'}, {guestName}!
         </motion.p>
@@ -230,13 +230,13 @@ export function InviteHero({
         <motion.h1
           variants={item}
           className="font-display font-extrabold text-4xl sm:text-5xl md:text-6xl lg:text-7xl
-                     leading-[1.05] tracking-tight mb-6"
+                     leading-[1.05] tracking-tight mb-10"
         >
           <span className="gradient-text-sweep">{eventTitle}</span>
         </motion.h1>
 
         {/* Date, time & location — построчно */}
-        <motion.div variants={item} className="space-y-1 mb-6 text-brand-pearl/70 text-lg">
+        <motion.div variants={item} className="space-y-2 mb-10 text-brand-pearl/70 text-lg">
           <p>{formattedDate}</p>
           <p>{formattedTime}</p>
           {eventLocation && <p>{eventLocation}</p>}

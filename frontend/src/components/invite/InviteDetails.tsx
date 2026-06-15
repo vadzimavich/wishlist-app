@@ -14,7 +14,7 @@ interface Props {
 export function InviteDetails({ date, description, show = 'both', children }: Props) {
 
   return (
-    <section className="relative z-10 px-4 py-20 max-w-2xl mx-auto space-y-10 text-center">
+    <section className="relative z-10 px-4 py-12 max-w-2xl mx-auto space-y-10 text-center">
       {show !== 'details' && (
         <div className="space-y-3">
           <h2 className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3">
@@ -22,7 +22,9 @@ export function InviteDetails({ date, description, show = 'both', children }: Pr
             Когда
           </h2>
           <p className="text-brand-pearl font-medium text-base sm:text-lg">
-            {format(new Date(date), "d MMMM yyyy, EEEE", { locale: ru })}
+            {format(new Date(date), "d MMMM yyyy", { locale: ru })}
+            <span className="text-brand-pearl/30">, </span>
+            {format(new Date(date), "EEEE", { locale: ru })}
             <span className="text-brand-pearl/30">, </span>
             {format(new Date(date), "HH:mm")}
           </p>
