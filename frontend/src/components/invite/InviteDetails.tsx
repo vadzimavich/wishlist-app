@@ -23,7 +23,7 @@ export function InviteDetails({ date, description, show = 'both', children }: Pr
           </h2>
           <p className="text-brand-pearl font-medium text-base sm:text-lg">
             {format(new Date(date), "d MMMM yyyy, EEEE", { locale: ru })}
-            <span className="mx-2 text-brand-pearl/30">·</span>
+            <span className="text-brand-pearl/30">, </span>
             {format(new Date(date), "HH:mm")}
           </p>
           {children}
