@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Gift, ExternalLink, X, Check, UserPlus } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { giftsApi } from '@/lib/api'
 import { WishlistItem, ClaimType } from '@/types'
-import { formatPrice } from '@/lib/utils'
+import { STATUS_ORDER } from '@/lib/wishlistStatus'
+import { WishlistCard } from './WishlistCard'
+import { WishlistClaimModal } from './WishlistClaimModal'
 
 interface Props {
   guestToken: string
@@ -16,23 +17,8 @@ interface Props {
   items: WishlistItem[]
 }
 
-const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
-  Available: { label: 'Свободен', cls: 'text-success bg-success/10 border-success/20' },
-  Reserved: { label: 'Выбран', cls: 'text-warning bg-warning/10 border-warning/20' },
-  Collective: { label: 'Открыт сбор', cls: 'text-info bg-info/10 border-info/20' },
-  Purchased: { label: 'Куплен', cls: 'text-admin-muted bg-admin-muted/10 border-admin-muted/20' },
-}
-
-const DEFAULT_STATUS = { label: '', cls: 'text-admin-muted bg-admin-muted/10 border-admin-muted/20' }
-
-const STATUS_ORDER: Record<string, number> = {
-  Available: 0,
-  Collective: 1,
-  Reserved: 2,
-  Purchased: 3,
-}
-
 export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: Props) {
+  // ─── Sorting ──────────────────────────────────────────────────────────────
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {
       const orderA = STATUS_ORDER[a.status] ?? 99
@@ -42,11 +28,11 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
     })
   }, [items])
 
+  // ─── Refs & State ─────────────────────────────────────────────────────────
   const sectionRef = useRef<HTMLDivElement>(null)
   const [selectedItem, setSelectedItem] = useState<WishlistItem | null>(null)
-  const [modalStep, setModalStep] = useState<'choose' | 'confirm' | 'success'>('choose')
-  const [successType, setSuccessType] = useState<'claim' | 'join'>('claim')
 
+  // ─── GSAP scroll animation ────────────────────────────────────────────────
   useEffect(() => {
     const initGsap = async () => {
       const { gsap } = await import('gsap')
@@ -70,6 +56,7 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
     initGsap()
   }, [items.length])
 
+  // ─── Mutations ────────────────────────────────────────────────────────────
   const qc = useQueryClient()
 
   const claimMutation = useMutation({
@@ -77,12 +64,10 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
       giftsApi.claimGift(guestToken, itemId, type),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['invite', guestToken] })
-      setSuccessType('claim')
-      setModalStep('success')
-      setTimeout(() => { setSelectedItem(null); setModalStep('choose') }, 2000)
     },
-    onError: (e: any) => {
-      toast.error(e?.response?.data?.error ?? 'Не удалось выбрать подарок')
+    onError: (e: unknown) => {
+      const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error
+      toast.error(msg ?? 'Не удалось выбрать подарок')
       setSelectedItem(null)
     },
   })
@@ -91,10 +76,11 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
     mutationFn: (claimId: string) => giftsApi.joinCollective(claimId, guestToken),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['invite', guestToken] })
-      setSuccessType('join')
-      setModalStep('success')
     },
-    onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Ошибка'),
+    onError: (e: unknown) => {
+      const msg = (e as { response?: { data?: { error?: string } } })?.response?.data?.error
+      toast.error(msg ?? 'Ошибка')
+    },
   })
 
   const cancelMutation = useMutation({
@@ -106,29 +92,32 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
     },
   })
 
+  // ─── Handlers ─────────────────────────────────────────────────────────────
   const openItem = (item: WishlistItem) => {
     if (item.status === 'Purchased') return
     setSelectedItem(item)
-    setModalStep('choose')
   }
 
-  const isMyClaim = (item: WishlistItem) =>
-    item.activeClaim?.claimer.id === currentGuestId
-
-  const isInMyCollective = (item: WishlistItem) =>
-    item.activeClaim?.participants.some(p => p.id === currentGuestId) ?? false
-
+  // ─── Re-fetch for real-time correctness ──────────────────────────────────
   const selected = selectedItem
     ? items.find(i => i.id === selectedItem.id) ?? selectedItem
     : null
 
-  if (items.length === 0) return null
+  // ─── Empty state ──────────────────────────────────────────────────────────
+  if (items.length === 0) {
+    return (
+      <section className="relative z-10 px-4 py-20 max-w-2xl mx-auto text-center">
+        <Sparkles size={32} className="text-brand-pearl/20 mx-auto mb-3" />
+        <p className="text-brand-pearl/40 text-sm">Подарков пока нет</p>
+      </section>
+    )
+  }
 
   return (
-    <section ref={sectionRef} className="relative z-10 px-4 py-20 max-w-2xl mx-auto">
+    <section ref={sectionRef} className="relative z-10 px-4 py-20 max-w-6xl mx-auto">
       <div className="text-center mb-8">
         <h2 className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3">
-          <Gift size={28} className="text-brand-violet shrink-0" />
+          <Sparkles size={28} className="text-brand-violet shrink-0" />
           Вишлист
         </h2>
         <p className="text-brand-pearl/40 text-sm mt-2">
@@ -136,343 +125,39 @@ export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: P
         </p>
       </div>
 
-      <div className="space-y-4">
-        {sortedItems.map(item => {
-          const status = STATUS_CONFIG[item.status] ?? DEFAULT_STATUS
-          const myItem = isMyClaim(item)
-          const inCollective = isInMyCollective(item)
-          const canJoin = item.status === 'Collective' && !myItem && !inCollective
-
-          return (
-            <motion.div
-              key={item.id}
-              layout
-              className={`wish-card liquid-glass p-4 flex items-start gap-4 cursor-pointer
-                          transition-all duration-300 relative
-                          ${item.status === 'Available' || canJoin
-                            ? 'hover:border-brand-violet/40 hover:-translate-y-0.5'
-                            : ''}`}
-              onClick={() => openItem(item)}
-              whileHover={item.status === 'Available' || canJoin ? { scale: 1.01 } : {}}
-              whileTap={item.status === 'Available' || canJoin ? { scale: 0.99 } : {}}
-            >
-              {/* Colored left border strip for collective items */}
-              {item.status === 'Collective' && item.activeClaim && (() => {
-                const claim = item.activeClaim!
-                const total = Math.max(claim.claimer.guestCount || 0, 5)
-                const pct = Math.min(claim.participants.length / total, 1)
-                const borderColor = pct < 0.4 ? '#60A5FA' : pct < 0.8 ? '#FBBF24' : '#4ADE80'
-                return (
-                  <div
-                    className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full"
-                    style={{ backgroundColor: borderColor }}
-                  />
-                )
-              })()}
-
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden shrink-0
-                              bg-brand-deep border border-brand-pearl/5">
-                {item.photoUrl ? (
-                  <img src={item.photoUrl} alt={item.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Gift size={24} className="text-brand-pearl/20" />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-brand-pearl font-medium text-sm md:text-base leading-tight">
-                      {item.name}
-                    </p>
-                    {item.price != null && (
-                      <p className="gradient-text-gold text-sm font-semibold mt-0.5">
-                        {formatPrice(item.price, item.currency)}
-                      </p>
-                    )}
-                  </div>
-                  <span className={`shrink-0 text-xs px-2.5 py-1 rounded-full border font-medium ${status.cls}`}>
-                    {status.label}
-                  </span>
-                </div>
-
-                {item.activeClaim && (
-                  <div className="mt-2 space-y-1">
-                    {myItem ? (
-                      <p className="text-xs text-brand-violet">✓ Твой выбор</p>
-                    ) : inCollective ? (
-                      <p className="text-xs text-info">✓ Ты в сборе</p>
-                    ) : (
-                      <p className="text-xs text-brand-pearl/40">
-                        {item.activeClaim.claimer.name}
-                      </p>
-                    )}
-
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 mt-2">
-                  {canJoin && (
-                    <span className="text-xs text-info flex items-center gap-1">
-                      <UserPlus size={12} />
-                      Присоединиться к сбору
-                    </span>
-                  )}
-                  {item.sourceUrl && (
-                    <a
-                      href={item.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={e => e.stopPropagation()}
-                      className="text-xs text-brand-pearl/30 hover:text-brand-pearl/60
-                                 flex items-center gap-1 transition-colors"
-                    >
-                      <ExternalLink size={11} />
-                      Посмотреть товар
-                    </a>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )
-        })}
+      {/* Responsive: horizontal scroll on mobile, grid on sm+ */}
+      <div
+        className="flex gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory sm:overflow-visible sm:snap-none pb-4 sm:pb-0 -mx-4 sm:mx-0 px-4 sm:px-0"
+        data-lenis-prevent
+        style={{ touchAction: 'manipulation' }}
+        role="region"
+        aria-label="Список подарков"
+      >
+        {sortedItems.map(item => (
+          <WishlistCard
+            key={item.id}
+            item={item}
+            currentGuestId={currentGuestId}
+            onOpen={openItem}
+            className="shrink-0 w-[75vw] sm:w-auto snap-center"
+          />
+        ))}
       </div>
 
-      {/* ── Gift Modal ── */}
-      <AnimatePresence>
-        {selected && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md"
-              onClick={() => { setSelectedItem(null); setModalStep('choose') }}
-            />
-
-            <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 pointer-events-none">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.97 }}
-                transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-                className="w-full max-w-md pointer-events-auto"
-              >
-                <div className="liquid-glass p-6 shadow-2xl">
-                  <button
-                    onClick={() => { setSelectedItem(null); setModalStep('choose') }}
-                    className="absolute top-4 right-4 text-brand-pearl/40 hover:text-brand-pearl transition-colors z-10"
-                  >
-                    <X size={18} />
-                  </button>
-
-                  <div className="flex gap-4 mb-6">
-                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-brand-deep shrink-0">
-                      {selected.photoUrl ? (
-                        <img src={selected.photoUrl} alt={selected.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Gift size={24} className="text-brand-pearl/20" />
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-brand-pearl font-medium">{selected.name}</p>
-                      {selected.price != null && (
-                        <p className="gradient-text-gold font-bold text-lg">
-                          {formatPrice(selected.price, selected.currency)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="space-y-3">
-                    {selected.status === 'Available' && (
-                      <>
-                        <p className="text-brand-pearl/60 text-sm text-center">Как хочешь подарить?</p>
-                        <div className="grid grid-cols-2 gap-3">
-                          <button
-                            onClick={() => claimMutation.mutate({ itemId: selected.id, type: 'Solo' })}
-                            disabled={claimMutation.isPending}
-                            className="flex flex-col items-center gap-2 p-4 rounded-xl
-                                       border border-brand-pearl/10 hover:border-brand-violet/40
-                                       hover:bg-brand-violet/10 transition-all disabled:opacity-50"
-                          >
-                            <span className="text-2xl">🎁</span>
-                            <span className="text-brand-pearl text-sm font-medium">Куплю сам</span>
-                            <span className="text-brand-pearl/40 text-xs text-center">Только от тебя</span>
-                          </button>
-                          <button
-                            onClick={() => claimMutation.mutate({ itemId: selected.id, type: 'Collective' })}
-                            disabled={claimMutation.isPending}
-                            className="flex flex-col items-center gap-2 p-4 rounded-xl
-                                       border border-brand-pearl/10 hover:border-brand-champagne/40
-                                       hover:bg-brand-champagne/5 transition-all disabled:opacity-50"
-                          >
-                            <span className="text-2xl">🤝</span>
-                            <span className="text-brand-pearl text-sm font-medium">Открыть сбор</span>
-                            <span className="text-brand-pearl/40 text-xs text-center">Другие могут скинуться</span>
-                          </button>
-                        </div>
-                      </>
-                    )}
-
-                    {selected.status === 'Collective' && !isMyClaim(selected) && !isInMyCollective(selected) && (
-                      <>
-                        <p className="text-brand-pearl/60 text-sm text-center">Групповой сбор</p>
-                        <div className="flex items-center justify-center gap-2 mt-2">
-                          <span className="text-xs text-brand-pearl/50">Начал:</span>
-                          <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs
-                                           bg-brand-deep border border-brand-pearl/10 shrink-0">
-                            {selected.activeClaim?.claimer.emoji}
-                          </span>
-                          <span className="text-xs text-brand-pearl/60">{selected.activeClaim?.claimer.name}</span>
-                        </div>
-
-                        <button
-                          onClick={() => selected.activeClaim && joinMutation.mutate(selected.activeClaim.id)}
-                          disabled={joinMutation.isPending}
-                          className="w-full py-3 rounded-xl bg-info/20 border border-info/30
-                                     text-info font-semibold hover:bg-info/30 transition-all
-                                     disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                          <UserPlus size={16} />
-                          {joinMutation.isPending ? 'Присоединяемся...' : 'Присоединиться к сбору'}
-                        </button>
-                      </>
-                    )}
-
-                    {isMyClaim(selected) && (
-                      <>
-                        <p className="text-brand-pearl/60 text-sm text-center">Ты выбрал этот подарок</p>
-                        <button
-                          onClick={() => selected.activeClaim && cancelMutation.mutate(selected.activeClaim.id)}
-                          disabled={cancelMutation.isPending}
-                          className="w-full py-3 rounded-xl border border-danger/20 text-danger
-                                     hover:bg-danger/10 transition-all disabled:opacity-50 text-sm"
-                        >
-                          {cancelMutation.isPending ? '...' : 'Отменить выбор'}
-                        </button>
-                      </>
-                    )}
-
-                    {isInMyCollective(selected) && !isMyClaim(selected) && (
-                      <>
-                        <p className="text-info text-sm text-center font-medium">Ты в сборе!</p>
-                        <div className="mt-3 space-y-2">
-                          <div className="flex items-center justify-center gap-2">
-                            <span className="text-xs text-brand-pearl/50">Сбор открыл(а):</span>
-                            <span className="text-sm">{selected.activeClaim?.claimer.emoji}</span>
-                            <span className="text-xs text-brand-pearl/70">{selected.activeClaim?.claimer.name}</span>
-                          </div>
-                          {selected.activeClaim && selected.activeClaim.participants.length > 0 && (
-                            <>
-                              <p className="text-xs text-brand-pearl/50 text-center">Участники:</p>
-                              <div className="flex flex-wrap justify-center gap-x-3 gap-y-1">
-                                {selected.activeClaim.participants.map((p) => (
-                                  <span key={p.id} className="flex items-center gap-1.5 text-xs text-brand-pearl/70">
-                                    <span className="text-sm">{p.emoji}</span>
-                                    <span>{p.name}</span>
-                                  </span>
-                                ))}
-                              </div>
-                            </>
-                          )}
-
-                        </div>
-                        <button
-                          onClick={() => selected.activeClaim && cancelMutation.mutate(selected.activeClaim.id)}
-                          className="w-full py-3 rounded-xl border border-danger/20 text-danger
-                                     hover:bg-danger/10 transition-all text-sm"
-                        >
-                          Выйти из сбора
-                        </button>
-                      </>
-                    )}
-
-                    {selected.status === 'Reserved' && !isMyClaim(selected) && (
-                      <p className="text-brand-pearl/40 text-sm text-center py-2">
-                        Этот подарок уже выбран другим гостем
-                      </p>
-                    )}
-
-                    {selected.status === 'Purchased' && (
-                      <p className="text-brand-pearl/40 text-sm text-center py-2">
-                        Этот подарок уже куплен 🎉
-                      </p>
-                    )}
-                  </div>
-
-                  {modalStep === 'success' && successType === 'claim' && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="text-center py-4"
-                    >
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: 'spring', delay: 0.1, damping: 12 }}
-                        className="w-16 h-16 rounded-full bg-success/20 border border-success/30
-                                   flex items-center justify-center mx-auto mb-4"
-                      >
-                        <Check size={28} className="text-success" />
-                      </motion.div>
-                      <p className="text-brand-pearl font-semibold text-lg">Отлично!</p>
-                      <p className="text-brand-pearl/60 text-sm mt-1">Подарок выбран</p>
-                    </motion.div>
-                  )}
-
-                  {modalStep === 'success' && successType === 'join' && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="text-center py-4"
-                    >
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: 'spring', delay: 0.1, damping: 12 }}
-                        className="w-16 h-16 rounded-full bg-info/20 border border-info/30
-                                   flex items-center justify-center mx-auto mb-4"
-                      >
-                        <Check size={28} className="text-info" />
-                      </motion.div>
-                      <p className="text-brand-pearl font-semibold text-lg">Ты в сборе!</p>
-                      <p className="text-brand-pearl/60 text-sm mt-1 mb-4">
-                        Вы участвуете в групповом сборе на этот подарок
-                      </p>
-
-                      {/* Participants list */}
-                      {selected.activeClaim && selected.activeClaim.participants.length > 0 && (
-                        <div className="mb-4">
-                          <p className="text-xs text-brand-pearl/40 mb-2">Участники сбора:</p>
-                          <div className="flex flex-wrap justify-center gap-2">
-                            {selected.activeClaim.participants.map((p) => (
-                              <div
-                                key={p.id}
-                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full
-                                           bg-brand-deep border border-brand-pearl/5"
-                              >
-                                <span className="text-sm">{p.emoji}</span>
-                                <span className="text-xs text-brand-pearl/70">{p.name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                    </motion.div>
-                  )}
-                </div>
-              </motion.div>
-            </div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Modal */}
+      {selected && (
+        <WishlistClaimModal
+          item={selected}
+          currentGuestId={currentGuestId}
+          onClose={() => setSelectedItem(null)}
+          onClaim={(itemId, type) => claimMutation.mutate({ itemId, type })}
+          onJoinCollective={(claimId) => joinMutation.mutate(claimId)}
+          onCancel={(claimId) => cancelMutation.mutate(claimId)}
+          isClaimPending={claimMutation.isPending}
+          isJoinPending={joinMutation.isPending}
+          isCancelPending={cancelMutation.isPending}
+        />
+      )}
     </section>
   )
 }
