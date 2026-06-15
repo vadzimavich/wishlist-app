@@ -6,7 +6,6 @@ import { MessageCircle, X, Send, Pencil, Trash2, Loader2, ChevronLeft } from 'lu
 import { formatDistanceToNow, format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useChatRealtime } from '@/hooks/useChatRealtime'
-import { useChatStore } from '@/lib/stores/chatStore'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -72,14 +71,7 @@ export function InviteChat({ eventId, guestToken, currentGuestId, isOpen, onClos
     loading,
   } = useChatRealtime({ eventId, guestToken })
 
-  const loadMessages = useChatStore((s) => s.loadMessages)
-
   // ── Lifecycle ────────────────────────────────────────────────────────────
-
-  // Load event messages on mount
-  useEffect(() => {
-    loadMessages(eventId, undefined, 0, 50)
-  }, [eventId, loadMessages])
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -423,7 +415,7 @@ export function InviteChat({ eventId, guestToken, currentGuestId, isOpen, onClos
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-                className="w-full max-w-md pointer-events-auto max-h-[80vh]"
+                className="w-full max-w-md pointer-events-auto h-[80vh]"
               >
                 {chatPanelContent}
               </motion.div>
