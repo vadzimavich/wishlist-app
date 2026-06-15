@@ -578,7 +578,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
 
 
   if (isMobile) {
-    const orbiting = orbitingGuests
+    const orbiting = centerGuest ? orbitingGuests : visibleGuests
     const center = centerGuest
 
     return (
@@ -620,19 +620,107 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
               </motion.div>
             )}
 
-            {/* ── Orbiting nodes in a 4-column grid ── */}
-            {orbiting.length > 0 && (
-              <div className="grid grid-cols-4 gap-3 w-full place-items-center">
-                {orbiting.map(guest => (
-                  <motion.div key={guest.id} variants={nodeVariants}>
-                    {renderMobileNode(guest, false, MOBILE_NODE_SIZE)}
-                  </motion.div>
-                ))}
-              </div>
-            )}
+            {/* ── Orbiting nodes in centered rows ── */}
+            {orbiting.length > 0 && (() => {
+              const rows = buildCenteredRows(orbiting.length)
+              const rowWraps: React.ReactNode[] = []
+              let offset = 0
+              for (let ri = 0; ri < rows.length; ri++) {
+                const rowGuests = orbiting.slice(offset, offset + rows[ri])
+                offset += rows[ri]
+                rowWraps.push(
+                  <div key={ri} className="flex gap-3 justify-center flex-wrap">
+                    {rowGuests.map(guest => (
+                      <motion.div key={guest.id} variants={nodeVariants}>
+                        {renderMobileNode(guest, false, MOBILE_NODE_SIZE)}
+                      </motion.div>
+                    ))}
+                  </div>
+                )
+              }
+              return <div className="flex flex-col items-center gap-3 w-full">{rowWraps}</div>
+            })()}
           </motion.div>
         </div>
 
+        {renderModals()}
+      </section>
+    )
+  }
+
+  // ── Desktop: no center guest → row-based centered grid ──
+  if (!centerGuest) {
+    const rows = buildCenteredRows(visibleGuests.length)
+    const rowWraps: React.ReactNode[] = []
+    let offset = 0
+    for (let ri = 0; ri < rows.length; ri++) {
+      const rowGuests = visibleGuests.slice(offset, offset + rows[ri])
+      offset += rows[ri]
+      rowWraps.push(
+        <div key={ri} className="flex gap-3 justify-center flex-wrap">
+          {rowGuests.map(guest => (
+            <div key={guest.id} className="flex flex-col items-center gap-1.5">
+              <div
+                className="flex items-center justify-center rounded-full relative cursor-pointer"
+                style={{
+                  width: guest.id === currentGuestId ? 70 : 54,
+                  height: guest.id === currentGuestId ? 70 : 54,
+                  background: guest.rsvpStatus === 'Attending'
+                    ? 'linear-gradient(135deg,rgba(74,222,128,0.25),rgba(74,222,128,0.08))'
+                    : 'linear-gradient(135deg,rgba(107,47,224,0.3),rgba(155,89,245,0.12))',
+                  border: `2px solid ${guest.rsvpStatus === 'Attending' ? 'rgba(74,222,128,0.5)' : 'rgba(155,89,245,0.35)'}`,
+                  boxShadow: `0 0 12px ${guest.rsvpStatus === 'Attending' ? 'rgba(74,222,128,0.15)' : 'rgba(155,89,245,0.08)'}`,
+                }}
+                onClick={() => {
+                  if (guest.id === currentGuestId) {
+                    setShowEmojiPicker(prev => !prev)
+                  }
+                }}
+              >
+                <span className={`leading-none select-none ${guest.id === currentGuestId ? 'text-2xl' : 'text-xl'}`}>
+                  {guest.emoji || '🙂'}
+                </span>
+              </div>
+              <span className={`text-center leading-tight ${guest.id === currentGuestId ? 'text-sm font-semibold text-brand-pearl' : 'text-xs font-medium text-brand-pearl/60'}`}>
+                {guest.name}
+                {guest.id === currentGuestId && (
+                  <span className="text-brand-violet ml-1 text-[10px] font-normal">{currentGuestCount > 1 ? '(вы)' : '(ты)'}</span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    return (
+      <section className="relative z-10 overflow-hidden py-12">
+        <div className="text-center px-4 mb-6 sm:mb-8">
+          <motion.h2
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
+            className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3"
+          >
+            <Users size={28} className="text-brand-violet shrink-0" />
+            Гости
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.08 }}
+            className="text-brand-pearl/40 text-xs sm:text-sm mt-2"
+          >
+            {totalInvited} приглашено · {totalAttending} придут
+          </motion.p>
+        </div>
+        <div className="px-4 mx-auto max-w-2xl">
+          <div className="flex flex-col items-center gap-3">
+            {rowWraps}
+          </div>
+        </div>
         {renderModals()}
       </section>
     )
