@@ -4,22 +4,19 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { Phone, MessageCircle } from 'lucide-react'
 import { guestsApi } from '@/lib/api'
 import { GuestSelf, RsvpStatus } from '@/types'
 import { useContactStore } from '@/lib/stores/contactStore'
-import { useChatStore } from '@/lib/stores/chatStore'
+
 import { ContactSharingModal } from './ContactSharingModal'
 import confetti from 'canvas-confetti'
 
 interface Props {
   guest: GuestSelf
   eventId: string
-  onChatToggle: () => void
-  chatOpen?: boolean
 }
 
-export function InviteRsvpBar({ guest, eventId, onChatToggle, chatOpen = false }: Props) {
+export function InviteRsvpBar({ guest, eventId }: Props) {
   const qc = useQueryClient()
   const [note, setNote] = useState('')
   const [expanded, setExpanded] = useState(false)
@@ -29,7 +26,6 @@ export function InviteRsvpBar({ guest, eventId, onChatToggle, chatOpen = false }
   const contactPromptDismissed = useRef(false)
   const isFormal = guest.guestCount > 1
   const contactStore = useContactStore()
-  const unreadMessages = useChatStore((s) => s.messages['__event__']?.length ?? 0)
 
   const rsvpMutation = useMutation({
     mutationFn: (status: RsvpStatus) =>
@@ -110,45 +106,26 @@ export function InviteRsvpBar({ guest, eventId, onChatToggle, chatOpen = false }
           <p className="text-brand-pearl/80 text-sm font-medium flex-1">
             {isFormal ? 'Вы придёте?' : 'Ты придёшь?'}
           </p>
-          <button
-            onClick={() => setContactModalOpen(true)}
-            className="p-2 rounded-lg text-brand-pearl/40 hover:text-brand-violet/70 hover:bg-brand-pearl/5
-                       transition-all active:scale-90"
-            title="Поделиться контактом"
-          >
-            <Phone size={16} />
-          </button>
-          <button
-            onClick={onChatToggle}
-            className="p-2 rounded-lg text-brand-pearl/40 hover:text-brand-violet/70 hover:bg-brand-pearl/5
-                       transition-all active:scale-90 relative"
-            title="Чат события"
-          >
-            <MessageCircle size={16} />
-            {unreadMessages > 0 && !chatOpen && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-danger
-                               text-white text-[9px] font-bold flex items-center justify-center
-                               shadow-lg">
-                {unreadMessages > 9 ? '9+' : unreadMessages}
-              </span>
-            )}
-          </button>
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleRsvp('Attending')}
               disabled={rsvpMutation.isPending}
-              className="px-4 py-1.5 rounded-lg bg-success/20 border border-success/30 text-success
-                         text-sm font-medium hover:bg-success/30 transition-all disabled:opacity-50
-                         active:scale-95"
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 active:scale-95 ${
+                guest.rsvpStatus === 'Attending'
+                  ? 'bg-success/20 border border-success/30 text-success hover:bg-success/30'
+                  : 'bg-brand-pearl/5 border border-brand-pearl/10 text-brand-pearl/60 hover:bg-brand-pearl/10'
+              }`}
             >
-              Да 🎉
+              Да
             </button>
             <button
               onClick={() => handleRsvp('NotAttending')}
               disabled={rsvpMutation.isPending}
-              className="px-4 py-1.5 rounded-lg bg-brand-pearl/5 border border-brand-pearl/10
-                         text-brand-pearl/60 text-sm hover:bg-brand-pearl/10 transition-all
-                         disabled:opacity-50 active:scale-95"
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 active:scale-95 ${
+                guest.rsvpStatus === 'NotAttending'
+                  ? 'bg-brand-pearl/20 border border-brand-pearl/30 text-brand-pearl hover:bg-brand-pearl/30'
+                  : 'bg-brand-pearl/5 border border-brand-pearl/10 text-brand-pearl/60 hover:bg-brand-pearl/10'
+              }`}
             >
               Нет
             </button>

@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, X, Send, Pencil, Trash2, Loader2, ChevronLeft } from 'lucide-react'
+import { MessageCircle, X, Send, Pencil, Trash2, Loader2, ChevronLeft, Phone } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useChatRealtime } from '@/hooks/useChatRealtime'
+import { ContactSharingModal } from './ContactSharingModal'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -56,6 +57,7 @@ export function InviteChat({ eventId, guestToken, currentGuestId, isOpen, onClos
   const [contextMenu, setContextMenu] = useState<{ messageId: string; x: number; y: number } | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
+  const [contactModalOpen, setContactModalOpen] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messageListRef = useRef<HTMLDivElement>(null)
@@ -211,6 +213,15 @@ export function InviteChat({ eventId, guestToken, currentGuestId, isOpen, onClos
             Чат события
           </h3>
         </div>
+        {/* Share contact button */}
+        <button
+          onClick={() => setContactModalOpen(true)}
+          className="p-1.5 rounded-lg text-brand-pearl/30 hover:text-brand-violet/70 hover:bg-brand-pearl/5
+                     transition-all"
+          title="Поделиться контактом"
+        >
+          <Phone size={15} />
+        </button>
         {/* Close button (desktop) */}
         <button
           onClick={() => onClose()}
@@ -481,6 +492,12 @@ export function InviteChat({ eventId, guestToken, currentGuestId, isOpen, onClos
           </>
         )}
       </AnimatePresence>
+
+      <ContactSharingModal
+        open={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+        guestToken={guestToken}
+      />
     </>
   )
 }

@@ -82,7 +82,7 @@ export function ContactSharingModal({ open, onClose, guestToken }: Props) {
                 <div className="mb-4">
                   <label className="flex items-center gap-2 text-brand-pearl/60 text-xs font-medium mb-1.5">
                     <MessageCircle size={14} />
-                    Telegram
+                    Telegram (необязательно)
                   </label>
                   <input
                     type="text"
@@ -99,7 +99,7 @@ export function ContactSharingModal({ open, onClose, guestToken }: Props) {
                 <div className="mb-4">
                   <label className="flex items-center gap-2 text-brand-pearl/60 text-xs font-medium mb-1.5">
                     <Phone size={14} />
-                    Телефон
+                    Телефон (необязательно)
                   </label>
                   <input
                     type="tel"

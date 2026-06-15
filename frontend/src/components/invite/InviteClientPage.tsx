@@ -14,6 +14,7 @@ import { InviteGuests } from './InviteGuests'
 import { InviteWishlist } from './InviteWishlist'
 import { InviteRsvpBar } from './InviteRsvpBar'
 import { useContactStore } from '@/lib/stores/contactStore'
+import { MessageCircle } from 'lucide-react'
 
 const InviteChat = dynamic(() => import('./InviteChat').then(m => m.InviteChat), { ssr: false })
 
@@ -135,7 +136,20 @@ export function InviteClientPage({ initialData, token }: Props) {
       </div>
 
       {/* RSVP sticky bar (always visible so guests can change their mind) */}
-      <InviteRsvpBar guest={page.currentGuest} eventId={page.eventId} onChatToggle={() => setChatOpen(prev => !prev)} chatOpen={chatOpen} />
+      <InviteRsvpBar guest={page.currentGuest} eventId={page.eventId} />
+
+      {/* Chat floating button — справа от RSVP бара */}
+      <button
+        onClick={() => setChatOpen(prev => !prev)}
+        className="fixed bottom-4 right-4 z-50 w-12 h-12 rounded-full
+                   bg-brand-violet/20 border border-brand-violet/30 text-brand-violet
+                   hover:bg-brand-violet/30 hover:scale-105
+                   active:scale-95 transition-all duration-200
+                   flex items-center justify-center shadow-2xl"
+        aria-label="Чат события"
+      >
+        <MessageCircle size={22} />
+      </button>
 
       {/* Hero */}
       <InviteHero
