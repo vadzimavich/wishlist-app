@@ -8,9 +8,10 @@ interface Props {
   date: string
   description?: string | null
   show?: 'when' | 'details' | 'both'
+  children?: React.ReactNode
 }
 
-export function InviteDetails({ date, description, show = 'both' }: Props) {
+export function InviteDetails({ date, description, show = 'both', children }: Props) {
 
   return (
     <section className="relative z-10 px-4 py-20 max-w-2xl mx-auto space-y-10 text-center">
@@ -26,6 +27,7 @@ export function InviteDetails({ date, description, show = 'both' }: Props) {
           <p className="text-brand-pearl/60 text-sm">
             {format(new Date(date), "HH:mm")}
           </p>
+          {children}
         </div>
       )}
 

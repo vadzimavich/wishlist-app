@@ -201,11 +201,10 @@ export function InviteClientPage({ initialData, token }: Props) {
         rsvpStatus={page.currentGuest.rsvpStatus}
       />
 
-      {/* Countdown */}
-      <InviteCountdown eventDate={page.eventDate} />
-
-      {/* When */}
-      <InviteDetails date={page.eventDate} show="when" />
+      {/* When + Countdown */}
+      <InviteDetails date={page.eventDate} show="when">
+        <InviteCountdown eventDate={page.eventDate} />
+      </InviteDetails>
 
       {/* Map */}
       <InviteMap location={page.eventLocation} latitude={page.eventLatitude} longitude={page.eventLongitude} />
