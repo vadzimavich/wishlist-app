@@ -1,5 +1,5 @@
 # ─── Build stage ──────────────────────────────────────────────────────────────
-FROM ghcr.io/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Копируем только csproj для кеширования слоя restore
@@ -14,7 +14,7 @@ RUN dotnet publish WishlistApp.API/WishlistApp.API.csproj \
     --no-restore
 
 # ─── Runtime stage ────────────────────────────────────────────────────────────
-FROM ghcr.io/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 # Устанавливаем русскую локаль и certifi
