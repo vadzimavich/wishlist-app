@@ -102,7 +102,7 @@ export function InviteMap({ location, latitude, longitude }: Props) {
               <MapPin size={28} className="text-brand-violet shrink-0" />
               Где
             </h2>
-        <p className="text-brand-pearl/80 text-sm sm:text-base">{location}</p>
+        <p className="text-brand-pearl/80 text-sm sm:text-base text-center">{location}</p>
       </div>
 
       {/* Map in its own rounded container */}
