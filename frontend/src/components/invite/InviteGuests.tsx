@@ -109,9 +109,6 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
   const [isMobile, setIsMobile] = useState(false)
   const isMobileRef = useRef(false)
 
-  const [visualCenterId, setVisualCenterId] = useState<string | null>(null)
-  const visualCenterIdRef = useRef<string | null>(null)
-
   const visibleGuests = useMemo(() => guests.filter(g => g.rsvpStatus !== 'NotAttending'), [guests])
   const totalInvited = useMemo(() => guests.reduce((sum, g) => sum + Math.max(1, g.guestCount), 0), [guests])
   const totalAttending = useMemo(
@@ -119,44 +116,12 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
     [guests]
   )
 
-  // Visual center: current guest if visible, otherwise a random stand-in.
-  // Uses both state and ref so the grid never flickers empty on decline.
   const centerGuest = useMemo((): GuestPublic | undefined => {
-    const match = visibleGuests.find(g => g.id === currentGuestId)
-    if (match) {
-      visualCenterIdRef.current = null
-      return match
-    }
-    if (visibleGuests.length === 0) return undefined
-    // Try state first, then ref, then pick immediately
-    if (visualCenterId) {
-      const fromState = visibleGuests.find(g => g.id === visualCenterId)
-      if (fromState) return fromState
-    }
-    const refId = visualCenterIdRef.current
-    if (refId) {
-      const fromRef = visibleGuests.find(g => g.id === refId)
-      if (fromRef) return fromRef
-    }
-    // First time — pick immediately so render never sees undefined
-    const pick = visibleGuests[Math.floor(Math.random() * visibleGuests.length)]
-    visualCenterIdRef.current = pick.id
-    setTimeout(() => setVisualCenterId(pick.id), 0)
-    return pick
-  }, [visibleGuests, currentGuestId, visualCenterId])
+    return visibleGuests.find(g => g.id === currentGuestId)
+  }, [visibleGuests, currentGuestId])
 
   const orbitingGuests = useMemo(() => {
     return visibleGuests.filter(g => g.id !== currentGuestId)
-  }, [visibleGuests, currentGuestId])
-
-  // Sync visualCenterId to ref when state changes
-  useEffect(() => { visualCenterIdRef.current = visualCenterId }, [visualCenterId])
-
-  // When current guest comes back, reset visualCenterId
-  useEffect(() => {
-    if (visibleGuests.some(g => g.id === currentGuestId)) {
-      if (visualCenterId !== null) setVisualCenterId(null)
-    }
   }, [visibleGuests, currentGuestId])
 
   const orbitIds = useMemo(() => orbitingGuests.map(g => g.id), [orbitingGuests])
