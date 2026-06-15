@@ -249,12 +249,15 @@ public record ChatMessageDto(
     Guid Id,
     Guid EventId,
     Guid? GuestId,
+    Guid? ClaimId,
     string GuestName,
     string GuestEmoji,
     string Text,
     DateTime? EditedAt,
     bool IsDeleted,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    bool IsFromHost,
+    string? HostName
 );
 
 // ─── ActivityEvent ───────────────────────────────────────────────────────────

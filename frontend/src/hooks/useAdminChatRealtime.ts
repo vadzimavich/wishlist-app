@@ -66,7 +66,7 @@ export function useAdminChatRealtime({ eventId, accessToken }: UseAdminChatRealt
 
   const sendEventMessage = useCallback(async (text: string) => {
     if (connectionRef.current) {
-      await connectionRef.current.invoke('SendEventMessage', text)
+      await connectionRef.current.invoke('HostSendEventMessage', text)
     }
   }, [])
 

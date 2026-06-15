@@ -120,6 +120,25 @@ public class ChatHub : Hub
     }
 
     /// <summary>
+    /// Хозяин события отправляет сообщение от имени админа.
+    /// Требует JWT аутентификации (access_token в query string).
+    /// </summary>
+    public async Task HostSendEventMessage(string text)
+    {
+        var httpContext = Context.GetHttpContext();
+        var userIdClaim = httpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            throw new HubException("Только хозяин события может отправлять сообщения.");
+        }
+
+        var userName = httpContext?.User?.FindFirstValue("name") ?? "Администратор";
+        var eventId = (Guid)Context.Items["EventId"]!;
+        var message = await _chatService.HostSaveMessage(eventId, userId, text, userName);
+        await Clients.Group($"event-chat-{eventId}").SendAsync("MessageReceived", message);
+    }
+
+    /// <summary>
     /// Хозяин события удаляет любое сообщение.
     /// Требует JWT аутентификации (access_token в query string).
     /// </summary>

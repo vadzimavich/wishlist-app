@@ -8,6 +8,7 @@ namespace WishlistApp.API.Services;
 public interface IChatService
 {
     Task<ChatMessageDto> SaveMessage(Guid eventId, Guid guestId, string text, Guid? claimId);
+    Task<ChatMessageDto> HostSaveMessage(Guid eventId, Guid hostUserId, string text, string hostName);
     Task<ChatMessageDto> EditMessage(Guid messageId, Guid guestId, string newText);
     Task DeleteMessage(Guid messageId, Guid guestId);
     Task HostDeleteMessage(Guid messageId, Guid eventId, Guid hostUserId);
@@ -32,6 +33,35 @@ public class ChatService(AppDbContext db) : IChatService
 
         // Загружаем навигационные свойства для DTO
         await db.Entry(message).Reference(m => m.Guest).LoadAsync();
+
+        return MapToDto(message);
+    }
+
+    public async Task<ChatMessageDto> HostSaveMessage(Guid eventId, Guid hostUserId, string text, string hostName)
+    {
+        // Verify the host owns this event
+        var ev = await db.Events
+            .FirstOrDefaultAsync(e => e.Id == eventId && e.UserId == hostUserId)
+            ?? throw new UnauthorizedAccessException("Только хозяин события может отправлять сообщения от имени админа.");
+
+        // Use the first guest of the event as the FK reference (required by DB)
+        var firstGuest = await db.Guests
+            .Where(g => g.EventId == eventId)
+            .OrderBy(g => g.CreatedAt)
+            .FirstOrDefaultAsync()
+            ?? throw new InvalidOperationException("Нет гостей в событии.");
+
+        var message = new ChatMessage
+        {
+            EventId = eventId,
+            GuestId = firstGuest.Id,
+            Text = text,
+            IsFromHost = true,
+            HostName = hostName,
+        };
+
+        db.ChatMessages.Add(message);
+        await db.SaveChangesAsync();
 
         return MapToDto(message);
     }
@@ -107,11 +137,14 @@ public class ChatService(AppDbContext db) : IChatService
         msg.Id,
         msg.EventId,
         msg.GuestId,
-        msg.Guest.Name,
-        msg.Guest.Emoji,
+        msg.ClaimId,
+        msg.IsFromHost ? (msg.HostName ?? "Администратор") : msg.Guest.Name,
+        msg.IsFromHost ? "🛡️" : msg.Guest.Emoji,
         msg.Text,
         msg.EditedAt,
         msg.IsDeleted,
-        msg.CreatedAt
+        msg.CreatedAt,
+        msg.IsFromHost,
+        msg.HostName
     );
 }

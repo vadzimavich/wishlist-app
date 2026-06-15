@@ -173,6 +173,8 @@ public class ChatMessage
     public DateTime? EditedAt { get; set; }         // NULL = never edited
     public bool IsDeleted { get; set; }             // soft-delete for moderation
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsFromHost { get; set; }            // true = sent by event host/admin, not a guest
+    public string? HostName { get; set; }           // admin's display name when IsFromHost=true
 
     // Navigation
     public Event Event { get; set; } = null!;
