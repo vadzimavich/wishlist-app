@@ -235,20 +235,18 @@ export function InviteHero({
           <span className="gradient-text-sweep">{eventTitle}</span>
         </motion.h1>
 
-        {/* Date */}
-        <motion.div variants={item} className="flex items-center justify-center gap-3 mb-5">
-          <div className="h-px w-12 bg-gradient-to-r from-transparent to-brand-violet/40" />
-          <p className="text-brand-pearl/90 text-xl font-medium">{formattedDate}</p>
-          <div className="h-px w-12 bg-gradient-to-l from-transparent to-brand-violet/40" />
+        {/* Date, time & location — единый стиль */}
+        <motion.div variants={item} className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mb-6 text-brand-pearl/70 text-lg">
+          <span>{formattedDate}</span>
+          <span className="text-brand-pearl/30" aria-hidden="true">·</span>
+          <span>{formattedTime}</span>
+          {eventLocation && (
+            <>
+              <span className="text-brand-pearl/30" aria-hidden="true">·</span>
+              <span>{eventLocation}</span>
+            </>
+          )}
         </motion.div>
-
-        <motion.p variants={item} className="text-brand-pearl/50 text-lg mb-6">{formattedTime}</motion.p>
-
-        {eventLocation && (
-          <motion.p variants={item} className="text-brand-pearl/50 text-base mb-6">
-            📍 {eventLocation}
-          </motion.p>
-        )}
 
         {/* RSVP status badge */}
         {badge && (
