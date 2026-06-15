@@ -35,11 +35,14 @@ export function InviteRsvpBar({ guest, eventId, onChatToggle }: Props) {
       guestsApi.updateRsvp(guest.token, status, note || undefined),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['invite', guest.token] })
-      toast.success(
+      const tid = toast.success(
         pendingStatus === 'Attending'
           ? (isFormal ? 'Отлично, ждём вас! 🎉' : 'Отлично, ждём тебя! 🎉')
-          : (isFormal ? 'Жаль, что не придёте 😔' : 'Понял, жаль что не придёшь 😔')
+          : (isFormal ? 'Жаль, что не придёте 😔' : 'Понял, жаль что не придёшь 😔'),
+        { duration: 2500 }
       )
+      // Force-dismiss after duration to handle StrictMode/re-render edge cases
+      setTimeout(() => toast.dismiss(tid), 2600)
       // Confetti burst on Attending
       if (pendingStatus === 'Attending') {
         const end = Date.now() + 1500
