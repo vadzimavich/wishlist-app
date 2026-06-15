@@ -4,11 +4,12 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { Plus, Trash2, Pencil, Calendar, Users, X, Copy, Check, Eye, MapPin, MessageCircle } from 'lucide-react'
+import { Plus, Trash2, Pencil, Calendar, Users, X, Copy, Check, Eye, MapPin, MessageSquare } from 'lucide-react'
 import { eventsApi, guestsApi } from '@/lib/api'
 import { Event, CreateEventForm, CreateGuestForm, UpdateGuestForm, Guest } from '@/types'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { AdminChat } from '@/components/admin/AdminChat'
 
 const EMOJI_OPTIONS = [
   '🙂','😎','🥳','🎉','💝','🎀','🌸','✨','🦄','🐱','🐶','🌟',
@@ -42,6 +43,7 @@ export default function EventsPage() {
   const [eventModal, setEventModal] = useState<'create' | 'edit' | null>(null)
   const [guestModal, setGuestModal] = useState<Event | null>(null)
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
+  const [chatEvent, setChatEvent] = useState<Event | null>(null)
   const [eventForm, setEventForm] = useState<CreateEventForm>(EMPTY_EVENT)
   const [guestForm, setGuestForm] = useState<CreateGuestForm>(EMPTY_GUEST)
   const [editingGuest, setEditingGuest] = useState<{ guest: Guest; eventId: string } | null>(null)
@@ -225,6 +227,13 @@ export default function EventsPage() {
                         >
                           <Users size={13} />
                           {totalGuests} гостей · {attending} придут
+                        </button>
+                        <button
+                          onClick={() => setChatEvent(ev)}
+                          className="flex items-center gap-1.5 text-xs text-admin-muted hover:text-sky-400 transition-colors"
+                        >
+                          <MessageSquare size={13} />
+                          Чат
                         </button>
                       </div>
                     </div>
@@ -473,17 +482,6 @@ export default function EventsPage() {
                         <Eye size={14} />
                       </a>
 
-                      {/* Chat */}
-                      <a
-                        href={`/invite/${guest.token}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="Чат события"
-                        className="p-1.5 rounded-lg text-admin-muted hover:text-sky-400 hover:bg-sky-400/10 transition-all"
-                      >
-                        <MessageCircle size={14} />
-                      </a>
-
                       <button
                         onClick={() => deleteGuest.mutate({ eventId: guestModal.id, guestId: guest.id })}
                         className="p-1.5 rounded-lg text-admin-muted hover:text-danger hover:bg-danger/10 transition-all"
@@ -498,6 +496,14 @@ export default function EventsPage() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Admin Chat */}
+      <AdminChat
+        eventId={chatEvent?.id ?? ''}
+        eventTitle={chatEvent?.title ?? ''}
+        isOpen={chatEvent !== null}
+        onClose={() => setChatEvent(null)}
+      />
     </div>
   )
 }
