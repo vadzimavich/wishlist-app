@@ -2,8 +2,8 @@
 FROM ubuntu:24.04 AS build
 WORKDIR /src
 
-# Install wget and .NET SDK 10.0 via official script (bypasses MCR rate limits)
-RUN apt-get update && apt-get install -y wget && \
+# Install wget, libicu and .NET SDK 10.0 via official script (bypasses MCR rate limits)
+RUN apt-get update && apt-get install -y wget libicu && \
     wget -q https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
     ./dotnet-install.sh --channel 10.0 --install-dir /usr/share/dotnet && \
@@ -33,11 +33,12 @@ RUN apt-get update && apt-get install -y wget && \
     ln -s /usr/share/dotnet/dotnet /usr/local/bin/dotnet && \
     rm -rf /var/lib/apt/lists/* dotnet-install.sh
 
-# Устанавливаем локали и certifi (как было в оригинале)
+# Устанавливаем локали, certifi, libicu (как было в оригинале)
 RUN apt-get update && apt-get install -y \
     locales \
     ca-certificates \
     libkrb5-3 \
+    libicu \
     && rm -rf /var/lib/apt/lists/*
 
 # Копируем опубликованные файлы
