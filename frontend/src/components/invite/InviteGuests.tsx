@@ -138,7 +138,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
     config: { tension: 80, friction: 28, mass: 2 },
   }))
 
-  function computeGridLayout(
+  function computeSymmetricHexLayout(
     count: number,
     cx: number,
     cy: number,
@@ -147,45 +147,69 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
   ): { x: number; y: number }[] {
     if (count <= 0) return []
 
-    // Generate hex-ring cells up to a bounding radius, then sort by
-    // visual distance (primary) and angle (secondary). This guarantees
-    // a symmetric figure for ANY count — complete rings → hexagons,
-    // partial rings → evenly-spread around the center.
-    const maxRing = Math.ceil((-3 + Math.sqrt(9 + 12 * count)) / 6) + 1
-    const allCells: { x: number; y: number; distSq: number; angle: number }[] = []
-
-    // Hex axial → pixel
+    const positions: { x: number; y: number }[] = []
+    const maxRing = Math.ceil((-3 + Math.sqrt(9 + 12 * count)) / 6) + 2
     const toX = (q: number, r: number) => spacingX * (q + r / 2)
     const toY = (q: number, r: number) => spacingY * r
-
-    // Clockwise direction vectors for hex ring walk
     const dirs: [number, number][] = [[0, -1], [-1, 0], [-1, 1], [0, 1], [1, 0], [1, -1]]
 
-    for (let ring = 1; ring <= maxRing; ring++) {
+    // Mirror reflection across y-axis in axial coords: (q, r) → (-q-r, r)
+    const mirrorQ = (q: number, r: number) => -q - r
+
+    for (let ring = 1; ring <= maxRing && positions.length < count; ring++) {
+      type Cell = { q: number; r: number; x: number; y: number; distSq: number; onYAxis: boolean }
+      const ringCells: Cell[] = []
       let q = ring, r = 0
       for (let side = 0; side < 6; side++) {
         const [dq, dr] = dirs[side]
         for (let step = 0; step < ring; step++) {
           const x = toX(q, r)
           const y = toY(q, r)
-          allCells.push({ x, y, distSq: x * x + y * y, angle: Math.atan2(y, x) })
+          ringCells.push({ q, r, x, y, distSq: x * x + y * y, onYAxis: Math.abs(x) < 0.01 })
           q += dq
           r += dr
         }
       }
+
+      // Group cells into mirror-pairs
+      type Pair = { a: Cell; b: Cell | null; distSq: number }
+      const pairs: Pair[] = []
+      const used = new Set<string>()
+
+      for (const cell of ringCells) {
+        const key = `${cell.q},${cell.r}`
+        if (used.has(key)) continue
+
+        if (cell.onYAxis) {
+          pairs.push({ a: cell, b: null, distSq: cell.distSq })
+          used.add(key)
+        } else {
+          const mq = mirrorQ(cell.q, cell.r)
+          const mr = cell.r
+          const mirrorCell = ringCells.find(c => c.q === mq && c.r === mr)
+          if (mirrorCell) {
+            pairs.push({ a: cell, b: mirrorCell, distSq: cell.distSq })
+            used.add(key)
+            used.add(`${mq},${mr}`)
+          } else {
+            pairs.push({ a: cell, b: null, distSq: cell.distSq })
+            used.add(key)
+          }
+        }
+      }
+
+      // Sort pairs by distSq and take until filled
+      pairs.sort((p1, p2) => p1.distSq - p2.distSq)
+      for (const pair of pairs) {
+        if (positions.length >= count) break
+        positions.push({ x: cx + pair.a.x, y: cy + pair.a.y })
+        if (pair.b && positions.length < count) {
+          positions.push({ x: cx + pair.b.x, y: cy + pair.b.y })
+        }
+      }
     }
 
-    // Sort by visual distance, then by angle for equal-distance cells
-    allCells.sort((a, b) => a.distSq - b.distSq || a.angle - b.angle)
-
-    const selected = allCells.slice(0, count)
-
-    // Small pseudo-random jitter (±5px) so nodes aren't perfectly aligned
-    const JITTER = 5
-    return selected.map((p, i) => ({
-      x: cx + p.x + Math.sin(i * 137.5 + 42) * JITTER,
-      y: cy + p.y + Math.cos(i * 97.3 + 13) * JITTER,
-    }))
+    return positions
   }
 
   function computeAdaptiveSpacing(
@@ -226,13 +250,15 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
       const padding = 40
 
       if (orbitingGuests.length > 0) {
-        // Adaptive spacing so the grid fills the container without overflowing
         const { spacingX, spacingY } = computeAdaptiveSpacing(
           orbitingGuests.length, w, h, padding
         )
-        const positions = computeGridLayout(orbitingGuests.length, cx, cy, spacingX, spacingY)
+        const rawPositions = computeSymmetricHexLayout(orbitingGuests.length, cx, cy, spacingX, spacingY)
+        const positions = rawPositions.map((pos, i) => {
+          const j = idBasedJitter(orbitingGuests[i].id)
+          return { x: pos.x + j.dx, y: pos.y + j.dy }
+        })
 
-        // Verify positions fit and scale down if needed (double-check)
         let maxRx = 0, maxRy = 0
         for (const p of positions) {
           maxRx = Math.max(maxRx, Math.abs(p.x - cx))
@@ -245,14 +271,17 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
         const scale = Math.min(scaleX, scaleY)
 
         if (scale < 1) {
-          // Recompute with scaled spacing
-          const scaled = computeGridLayout(
+          const rawScaled = computeSymmetricHexLayout(
             orbitingGuests.length, cx, cy,
             spacingX * scale, spacingY * scale
           )
-          homePositionsRef.current = scaled
+          const scaledPositions = rawScaled.map((pos, i) => {
+            const j = idBasedJitter(orbitingGuests[i].id)
+            return { x: pos.x + j.dx, y: pos.y + j.dy }
+          })
+          homePositionsRef.current = scaledPositions
           api.start(i => ({
-            x: scaled[i].x, y: scaled[i].y, immediate: true,
+            x: scaledPositions[i].x, y: scaledPositions[i].y, immediate: true,
           }))
         } else {
           homePositionsRef.current = positions
