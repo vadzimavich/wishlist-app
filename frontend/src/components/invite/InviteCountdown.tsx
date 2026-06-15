@@ -62,11 +62,7 @@ export function InviteCountdown({ eventDate }: Props) {
   ]
 
   return (
-    <div className="mt-10 space-y-4">
-      <p className="text-brand-pearl/30 text-xs sm:text-sm font-medium tracking-widest uppercase">
-        Через
-      </p>
-
+    <div className="mt-10">
       <div className="grid grid-cols-4 gap-2 sm:gap-4">
         {units.map(({ value, label }) => (
           <div

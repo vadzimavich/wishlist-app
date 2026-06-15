@@ -21,10 +21,9 @@ export function InviteDetails({ date, description, show = 'both', children }: Pr
             <Calendar size={28} className="text-brand-violet shrink-0" />
             Когда
           </h2>
-          <p className="text-brand-pearl font-medium text-lg">
+          <p className="text-brand-pearl font-medium text-base sm:text-lg">
             {format(new Date(date), "d MMMM yyyy, EEEE", { locale: ru })}
-          </p>
-          <p className="text-brand-pearl/60 text-sm">
+            <span className="mx-2 text-brand-pearl/30">·</span>
             {format(new Date(date), "HH:mm")}
           </p>
           {children}
