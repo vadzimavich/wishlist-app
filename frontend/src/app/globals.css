@@ -269,6 +269,131 @@ body {
   animation: glow-pulse 2s ease-in-out 3;
 }
 
+/* ─── Card Gradient Border Utilities ──────────────────────────── */
+.card-gradient-border-available {
+  position: relative;
+}
+
+.card-gradient-border-available::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(to bottom, #34D399, #4ADE80);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.card-gradient-border-collective {
+  position: relative;
+}
+
+.card-gradient-border-collective::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(to bottom, #38BDF8, #60A5FA);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.card-gradient-border-collective-mine {
+  position: relative;
+}
+
+.card-gradient-border-collective-mine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(to bottom, #9B59F5, #6B2FE0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.card-gradient-border-reserved {
+  position: relative;
+}
+
+.card-gradient-border-reserved::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(to bottom, #7A7A9A, #2A2A3A);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.card-gradient-border-purchased {
+  position: relative;
+}
+
+.card-gradient-border-purchased::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(to bottom, #4ADE80, rgba(74, 222, 128, 0.5));
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ─── Wishlist Scroll Container ──────────────────────────────────────────── */
+.wishlist-scroll-container {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  touch-action: manipulation;
+}
+
+/* ─── Scrollbar Hide ──────────────────────────────────────────────────────── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ─── Card Shadow Premium ────────────────────────────────────────────────── */
+.card-shadow-premium {
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -2px rgba(0, 0, 0, 0.2),
+    0 10px 15px -3px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
 /* ─── Reduced motion ─────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -279,6 +404,16 @@ body {
 
   .gradient-text-sweep {
     animation: none;
+  }
+
+  .card-gradient-border-available,
+  .card-gradient-border-collective,
+  .card-gradient-border-collective-mine,
+  .card-gradient-border-reserved,
+  .card-gradient-border-purchased,
+  .card-shadow-premium {
+    animation: none;
+    transition: none;
   }
 }
 
