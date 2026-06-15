@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useSprings, useSpring, animated } from '@react-spring/web'
 import { Phone, MessageCircle, Users, X } from 'lucide-react'
 import { GuestPublic } from '@/types'
@@ -46,6 +46,8 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
   const [contactPopupGuest, setContactPopupGuest] = useState<string | null>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const contactStore = useContactStore()
+  const [isMobile, setIsMobile] = useState(false)
+  const isMobileRef = useRef(false)
 
   const visibleGuests = useMemo(() => guests.filter(g => g.rsvpStatus !== 'NotAttending'), [guests])
   const attending = useMemo(() => guests.filter(g => g.rsvpStatus === 'Attending').length, [guests])
@@ -66,17 +68,18 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
   }))
 
   function computeGridLayout(count: number, cx: number, cy: number): { x: number; y: number }[] {
-    if (count <= 1) return Array.from({ length: count }, () => ({ x: cx, y: cy }))
+    if (count <= 0) return []
 
     // Build a grid large enough to hold all orbiting guests
-    // Fill cells closest to center first in diamond pattern
-    // Center guest floats independently on top — no cell is reserved
+    // Exclude the center cell (0,0) so orbiting guests don't overlap with the center guest
 
-    const halfSize = Math.ceil(Math.sqrt(count)) + 2
+    const halfSize = Math.ceil(Math.sqrt(count + 1)) + 2
     const cells: { col: number; row: number; distSq: number }[] = []
 
     for (let row = -halfSize; row <= halfSize; row++) {
       for (let col = -halfSize; col <= halfSize; col++) {
+        // Skip the center cell — it's reserved for the current guest
+        if (col === 0 && row === 0) continue
         const distSq = col * col + row * row
         cells.push({ col, row, distSq })
       }
@@ -103,6 +106,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
     if (!el || allIds.length === 0) return
 
     const measure = () => {
+      if (isMobileRef.current) return
       const w = el.offsetWidth || 800
       const h = 420
       const cx = w / 2, cy = h / 2
@@ -135,6 +139,19 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
   useEffect(() => {
     contactStore.fetchSharedContacts(guestToken)
   }, [guestToken])
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      const matches = e.matches
+      isMobileRef.current = matches
+      setIsMobile(matches)
+    }
+    handler(mq)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   // Update spring config when debug sliders change
   useEffect(() => {
@@ -251,6 +268,95 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
     })
   }, [api])
 
+  function renderMobileModals() {
+    if (!isMobile) return null
+
+    const contact = contactPopupGuest ? getSharedContact(contactPopupGuest) : null
+
+    return (
+      <>
+        <AnimatePresence>
+          {showEmojiPicker && centerGuest?.id === currentGuestId && (
+            <motion.div
+              key="emoji-picker-modal"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40"
+              onClick={() => setShowEmojiPicker(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-brand-deep/95 border border-brand-violet/20 rounded-xl p-3 shadow-2xl backdrop-blur-sm"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="grid grid-cols-6 gap-1.5 max-w-[230px]">
+                  {EMOJI_PRESETS.map(emoji => (
+                    <button
+                      key={emoji}
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        try {
+                          await guestsApi.updateEmoji(guestToken, emoji)
+                          onEmojiUpdate?.(centerGuest!.id, emoji)
+                          setShowEmojiPicker(false)
+                        } catch {
+                          // Silently fail
+                        }
+                      }}
+                      className={`w-9 h-9 flex items-center justify-center rounded-lg text-xl
+                        hover:bg-brand-violet/20 transition-colors
+                        ${centerGuest?.emoji === emoji ? 'ring-2 ring-brand-violet' : ''}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {contact && (
+            <motion.div
+              key="contact-popup-modal"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40"
+              onClick={() => setContactPopupGuest(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-brand-deep/95 border border-brand-violet/20 rounded-xl p-4 shadow-2xl backdrop-blur-sm min-w-[180px]"
+                onClick={e => e.stopPropagation()}
+              >
+                <p className="text-sm font-medium text-brand-pearl mb-2">{contact.name}</p>
+                {contact.telegram && (
+                  <div className="flex items-center gap-2 text-sm text-brand-pearl/70 mb-1">
+                    <MessageCircle size={14} className="text-sky-400 shrink-0" />
+                    {contact.telegram}
+                  </div>
+                )}
+                {contact.phone && (
+                  <div className="flex items-center gap-2 text-sm text-brand-pearl/70">
+                    <Phone size={14} className="text-success shrink-0" />
+                    {contact.phone}
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </>
+    )
+  }
+
   if (guests.length === 0 || visibleGuests.length === 0) {
     return (
       <section className="relative z-10 overflow-hidden py-16">
@@ -263,6 +369,107 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
             {guests.length === 0 ? 'Пока нет приглашённых' : 'Никто не подтвердил'}
           </p>
         </div>
+      </section>
+    )
+  }
+
+  // === MOBILE VIEW ===
+  if (isMobile) {
+    const sortedGuests = [centerGuest, ...orbitingGuests].filter(Boolean) as GuestPublic[]
+
+    return (
+      <section className="relative z-10 overflow-hidden py-12 sm:py-16">
+        <div className="text-center px-4 mb-6 sm:mb-8">
+          <motion.h2
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
+            className="font-display font-bold text-3xl sm:text-4xl tracking-tight gradient-text-sweep flex items-center justify-center gap-3"
+          >
+            <Users size={28} className="text-brand-violet shrink-0" />
+            Гости
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.08 }}
+            className="text-brand-pearl/40 text-xs sm:text-sm mt-2"
+          >
+            {guests.length} приглашено · {attending} придут
+          </motion.p>
+        </div>
+
+        <div className="px-4 mx-auto max-w-md space-y-3">
+          {sortedGuests.map(guest => {
+            const isCurrent = guest.id === currentGuestId
+            const isAtt = guest.rsvpStatus === 'Attending'
+            const hasContact = guest.isContactShared
+            const circleSize = isCurrent ? 56 : 48
+            const bgGrad = isAtt
+              ? 'linear-gradient(135deg,rgba(74,222,128,0.25),rgba(74,222,128,0.08))'
+              : 'linear-gradient(135deg,rgba(107,47,224,0.3),rgba(155,89,245,0.12))'
+            const borderColor = isAtt ? 'rgba(74,222,128,0.5)' : 'rgba(155,89,245,0.35)'
+            const glowColor = isAtt ? 'rgba(74,222,128,0.15)' : 'rgba(155,89,245,0.08)'
+
+            return (
+              <div
+                key={guest.id}
+                className="flex items-center gap-3 bg-brand-deep/50 rounded-xl p-3 border border-brand-violet/10
+                           transition-colors hover:border-brand-violet/25"
+                style={isAtt ? { borderColor: 'rgba(74,222,128,0.25)' } : undefined}
+                onClick={() => { if (hasContact) handleContactClick(guest.id) }}
+              >
+                {/* Emoji circle */}
+                <div
+                  className="flex items-center justify-center rounded-full shrink-0 relative"
+                  style={{
+                    width: circleSize,
+                    height: circleSize,
+                    background: bgGrad,
+                    border: `2px solid ${borderColor}`,
+                    boxShadow: `0 0 12px ${glowColor}`,
+                  }}
+                  onClick={(e) => {
+                    if (isCurrent) {
+                      e.stopPropagation()
+                      setShowEmojiPicker(prev => !prev)
+                    }
+                  }}
+                >
+                  <span className="text-lg leading-none select-none">{guest.emoji || '🙂'}</span>
+                  {/* Contact icon */}
+                  {hasContact && (
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-brand-violet/80
+                                    flex items-center justify-center shadow-lg">
+                      <Phone size={8} className="text-white" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Name + RSVP */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`font-medium truncate ${isCurrent ? 'text-brand-pearl text-sm' : 'text-brand-pearl/70 text-sm'}`}>
+                      {guest.name}
+                    </span>
+                    {isCurrent && (
+                      <span className="text-[10px] font-normal text-brand-violet shrink-0">
+                        ({currentGuestCount > 1 ? 'вы' : 'ты'})
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-xs ${isAtt ? 'text-success/70' : 'text-brand-pearl/30'}`}>
+                    {isAtt ? 'Придёт' : 'Ожидается'}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {renderMobileModals()}
       </section>
     )
   }
@@ -475,6 +682,7 @@ export function InviteGuests({ guests, currentGuestId, currentGuestCount, guestT
         )}
       </div>
 
+      {renderMobileModals()}
     </section>
   )
 }
