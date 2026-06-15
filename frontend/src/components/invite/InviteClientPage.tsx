@@ -45,23 +45,35 @@ export function InviteClientPage({ initialData, token }: Props) {
     }
   }, [page?.wishlistItems, setItems])
 
-  // Sync guests list from fetched page data
+  // Sync guests list from fetched page data — MERGE instead of replace
   useEffect(() => {
     if (page?.guests && page?.currentGuest) {
       setGuests(prev => {
-        // Start with server data, but ensure currentGuest is always present
-        const merged = page.guests.some(g => g.id === page.currentGuest.id)
-          ? page.guests
-          : [...page.guests, {
-              id: page.currentGuest.id,
-              name: page.currentGuest.name,
-              emoji: page.currentGuest.emoji,
-              rsvpStatus: page.currentGuest.rsvpStatus,
-              guestCount: page.currentGuest.guestCount,
-              telegram: page.currentGuest.telegram,
-              phone: page.currentGuest.phone,
-              isContactShared: page.currentGuest.isContactShared,
-            }]
+        // Build a map of existing guests for quick lookup
+        const prevMap = new Map(prev.map(g => [g.id, g]))
+        // Merge fresh guests from server, keeping local rsvpStatus for currentGuest
+        let merged = page.guests.map(g => {
+          const local = prevMap.get(g.id)
+          if (local && g.id === page.currentGuest!.id) {
+            // Keep the latest rsvpStatus (SignalR might be ahead of refetch)
+            return { ...g, rsvpStatus: local.rsvpStatus }
+          }
+          return local ? { ...local, ...g } : g
+        })
+        // Ensure currentGuest is always in the list
+        const hasCurrent = merged.some(g => g.id === page.currentGuest!.id)
+        if (!hasCurrent) {
+          merged = [...merged, {
+            id: page.currentGuest.id,
+            name: page.currentGuest.name,
+            emoji: page.currentGuest.emoji,
+            rsvpStatus: page.currentGuest.rsvpStatus,
+            guestCount: page.currentGuest.guestCount,
+            telegram: page.currentGuest.telegram,
+            phone: page.currentGuest.phone,
+            isContactShared: page.currentGuest.isContactShared,
+          }]
+        }
         return merged
       })
     }

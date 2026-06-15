@@ -42,7 +42,10 @@ export function AdminChat({ eventId, eventTitle, isOpen, onClose }: Props) {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messageListRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const prevMessageCountRef = useRef(0)
+  const wasOpenRef = useRef(false)
 
   useEffect(() => {
     setAccessToken(localStorage.getItem('accessToken'))
@@ -57,15 +60,42 @@ export function AdminChat({ eventId, eventTitle, isOpen, onClose }: Props) {
     loading,
   } = useAdminChatRealtime({ eventId, accessToken: accessToken ?? null })
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on NEW messages only (not on initial load)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const count = messages.length
+    if (count > 0 && count > prevMessageCountRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+    prevMessageCountRef.current = count
   }, [messages.length])
 
-  // Focus input when chat opens
+  // Scroll to last message when chat opens (after messages are loaded)
   useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 300)
+    if (isOpen && !wasOpenRef.current) {
+      wasOpenRef.current = true
+      // Use rAF + scrollTop to ensure DOM is painted
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+        })
+      })
+      setTimeout(() => inputRef.current?.focus(), 400)
+    } else if (!isOpen) {
+      wasOpenRef.current = false
+    }
   }, [isOpen])
+
+  // Stop wheel events from propagating to the page behind
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    const el = messageListRef.current
+    if (!el) return
+    const { scrollTop, scrollHeight, clientHeight } = el
+    const atTop = scrollTop === 0
+    const atBottom = scrollTop + clientHeight >= scrollHeight
+    // If scrolling up at the top OR down at the bottom, let native scroll handle it (won't propagate)
+    if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) return
+    e.stopPropagation()
+  }, [])
 
   const handleSend = useCallback(async () => {
     const text = inputText.trim()
@@ -122,7 +152,12 @@ export function AdminChat({ eventId, eventTitle, isOpen, onClose }: Props) {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+            <div
+              ref={messageListRef}
+              onWheel={handleWheel}
+              className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+              style={{ overscrollBehavior: 'contain' }}
+            >
               {loading && messages.length === 0 ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 size={20} className="animate-spin text-admin-muted" />

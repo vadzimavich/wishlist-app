@@ -63,7 +63,8 @@ export function InviteChat({ eventId, guestToken, currentGuestId, isOpen, onClos
   const messageListRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const prevMessageCountRef = useRef(0)
+  const prevMessageCountRef = useRef<number | null>(null)
+  const wasOpenRef = useRef(false)
 
   const {
     sendEventMessage,
@@ -75,24 +76,43 @@ export function InviteChat({ eventId, guestToken, currentGuestId, isOpen, onClos
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
-  // Auto-scroll to bottom when new messages arrive
+  // Scroll to last message when chat opens (after messages are loaded & DOM ready)
   useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      wasOpenRef.current = true
+      if (currentMessages.length > 0) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+          })
+        })
+      }
+    } else if (!isOpen) {
+      wasOpenRef.current = false
+      prevMessageCountRef.current = null
+    }
+  }, [isOpen])
+
+  // Auto-scroll to bottom when NEW messages arrive (not on initial load)
+  useEffect(() => {
+    if (!isOpen) return
     const count = currentMessages.length
-    if (count > 0 && count > prevMessageCountRef.current) {
+    if (count > 0 && prevMessageCountRef.current !== null && count > prevMessageCountRef.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
     prevMessageCountRef.current = count
-  }, [currentMessages.length])
+  }, [currentMessages.length, isOpen])
 
-  // Scroll to last message when chat opens or messages change
-  useEffect(() => {
-    if (isOpen && currentMessages.length > 0) {
-      const timer = setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: currentMessages.length > prevMessageCountRef.current ? 'smooth' : 'auto' })
-      }, 400)
-      return () => clearTimeout(timer)
-    }
-  }, [isOpen, currentMessages.length])
+  // Stop wheel events from propagating to the page behind
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    const el = messageListRef.current
+    if (!el) return
+    const { scrollTop, scrollHeight, clientHeight } = el
+    const atTop = scrollTop === 0
+    const atBottom = scrollTop + clientHeight >= scrollHeight
+    if ((atTop && e.deltaY < 0) || (atBottom && e.deltaY > 0)) return
+    e.stopPropagation()
+  }, [])
 
   // Close context menu on click outside
   useEffect(() => {
@@ -237,7 +257,9 @@ export function InviteChat({ eventId, guestToken, currentGuestId, isOpen, onClos
       <div className="flex-1 overflow-hidden">
         <div
           ref={messageListRef}
+          onWheel={handleWheel}
           className="h-full overflow-y-auto px-3 py-3 space-y-3"
+          style={{ overscrollBehavior: 'contain' }}
         >
           {/* Loading state */}
           {loading && currentMessages.length === 0 && (

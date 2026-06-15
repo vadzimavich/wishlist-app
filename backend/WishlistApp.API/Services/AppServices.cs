@@ -264,6 +264,32 @@ public class GuestService(AppDbContext db, IConfiguration config, IWishlistHubSe
         var guest = await db.Guests.FirstOrDefaultAsync(g => g.Id == guestId && g.EventId == eventId)
             ?? throw new KeyNotFoundException("Гость не найден.");
 
+        // Pass 1 — удаляем все зависимые записи (FK Restrict не даёт сделать всё одним SaveChanges)
+        var chatMessages = await db.ChatMessages
+            .Where(m => m.GuestId == guestId)
+            .ToListAsync();
+        db.ChatMessages.RemoveRange(chatMessages);
+
+        var claims = await db.GiftClaims
+            .Include(c => c.Participants)
+            .Where(c => c.GuestId == guestId)
+            .ToListAsync();
+
+        foreach (var claim in claims)
+        {
+            if (claim.Participants.Count > 0)
+                db.CollectiveParticipants.RemoveRange(claim.Participants);
+        }
+        db.GiftClaims.RemoveRange(claims);
+
+        var participations = await db.CollectiveParticipants
+            .Where(p => p.GuestId == guestId)
+            .ToListAsync();
+        db.CollectiveParticipants.RemoveRange(participations);
+
+        await db.SaveChangesAsync();
+
+        // Pass 2 — теперь можно удалить самого гостя
         db.Guests.Remove(guest);
         await db.SaveChangesAsync();
     }
@@ -479,14 +505,24 @@ public class GiftService(AppDbContext db, IWishlistHubService hubService, IActiv
             .FirstOrDefaultAsync(c => c.Id == claimId && c.Type == ClaimType.Collective && c.IsActive)
             ?? throw new KeyNotFoundException("Сбор не найден или уже закрыт.");
 
-        if (claim.Participants.Any(p => p.GuestId == guest.Id))
+        if (claim.Participants.Any(p => p.GuestId == guest.Id && p.IsActive))
             throw new InvalidOperationException("Вы уже участвуете в этом сборе.");
 
-        db.CollectiveParticipants.Add(new CollectiveParticipant
+        // Re-activate existing inactive participation or create new
+        var existing = claim.Participants.FirstOrDefault(p => p.GuestId == guest.Id && !p.IsActive);
+        if (existing != null)
         {
-            GiftClaimId = claimId,
-            GuestId = guest.Id
-        });
+            existing.IsActive = true;
+            existing.LeftAt = null;
+        }
+        else
+        {
+            db.CollectiveParticipants.Add(new CollectiveParticipant
+            {
+                GiftClaimId = claimId,
+                GuestId = guest.Id
+            });
+        }
 
         await db.SaveChangesAsync();
 

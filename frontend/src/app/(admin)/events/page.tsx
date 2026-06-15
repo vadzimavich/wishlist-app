@@ -84,6 +84,7 @@ export default function EventsPage() {
     mutationFn: ({ eventId, guestId }: { eventId: string; guestId: string }) =>
       guestsApi.deleteGuest(eventId, guestId),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['events'] }); toast.success('Гость удалён') },
+    onError: (e: any) => toast.error(e?.response?.data?.error ?? 'Ошибка при удалении гостя'),
   })
 
   const updateGuest = useMutation({
@@ -483,10 +484,14 @@ export default function EventsPage() {
                       </a>
 
                       <button
-                        onClick={() => deleteGuest.mutate({ eventId: guestModal.id, guestId: guest.id })}
+                        onClick={() => deleteGuest.mutate({
+                          eventId: currentGuestEvent?.id ?? guestModal.id,
+                          guestId: guest.id
+                        })}
+                        title="Удалить гостя"
                         className="p-1.5 rounded-lg text-admin-muted hover:text-danger hover:bg-danger/10 transition-all"
                       >
-                        <X size={14} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   )
