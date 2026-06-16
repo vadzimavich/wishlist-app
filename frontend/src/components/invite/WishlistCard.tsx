@@ -40,7 +40,6 @@ export function WishlistCard({ item, currentGuestId, onOpen, className }: Wishli
       className={cn(
         // GSAP targets `.wish-card` — do not remove
         'wish-card liquid-glass group relative overflow-hidden transition-all duration-300',
-        visual.borderClass,
         isInteractive
           ? 'cursor-pointer focus-visible:ring-2 focus-visible:ring-brand-violet focus-visible:ring-offset-2 focus-visible:ring-offset-brand-deep'
           : 'opacity-60 cursor-default',
@@ -95,9 +94,9 @@ export function WishlistCard({ item, currentGuestId, onOpen, className }: Wishli
             target="_blank"
             rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
-            className="absolute top-3 left-3 z-10 text-brand-pearl/30 hover:text-brand-pearl/60 transition-colors"
+            className="absolute top-3 left-3 z-10 text-brand-pearl/60 hover:text-brand-pearl transition-colors"
           >
-            <ExternalLink size={14} />
+            <ExternalLink size={16} />
           </a>
         )}
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Check, UserPlus, Gift } from 'lucide-react'
+import { X, Check, UserPlus, Gift, ExternalLink } from 'lucide-react'
 import type { WishlistItem } from '@/types'
 import { formatPrice } from '@/lib/utils'
 
@@ -83,7 +83,7 @@ export function WishlistClaimModal({
           {/* Modal */}
           <div
             key="modal-wrapper"
-            className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4 pointer-events-none"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -123,6 +123,18 @@ export function WishlistClaimModal({
                         {formatPrice(item.price, item.currency)}
                       </p>
                     )}
+                    {item.sourceUrl && (
+                      <a
+                        href={item.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs text-brand-pearl/50 hover:text-brand-violet transition-colors mt-1"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <ExternalLink size={12} />
+                        Открыть на сайте
+                      </a>
+                    )}
                   </div>
                 </div>
 
@@ -141,7 +153,7 @@ export function WishlistClaimModal({
                                      hover:bg-brand-violet/10 transition-all disabled:opacity-50"
                         >
                           <span className="text-2xl">🎁</span>
-                          <span className="text-brand-pearl text-sm font-medium">Куплю сам</span>
+                          <span className="text-brand-pearl text-sm font-medium">Куплю</span>
                           <span className="text-brand-pearl/40 text-xs text-center">Только от тебя</span>
                         </button>
                         <button
@@ -188,7 +200,7 @@ export function WishlistClaimModal({
                   {/* State 3 & 4: My claim (Solo or Collective-owner) — cancel button */}
                   {isMyClaim && (
                     <>
-                      <p className="text-brand-pearl/60 text-sm text-center">Ты выбрал этот подарок</p>
+                      <p className="text-brand-pearl/60 text-sm text-center">Этот подарок выбран тобой</p>
                       <button
                         onClick={handleCancel}
                         disabled={isCancelPending}

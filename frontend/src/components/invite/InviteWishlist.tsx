@@ -9,6 +9,7 @@ import { WishlistItem, ClaimType } from '@/types'
 import { STATUS_ORDER } from '@/lib/wishlistStatus'
 import { WishlistCard } from './WishlistCard'
 import { WishlistClaimModal } from './WishlistClaimModal'
+import { useWishlistStore } from '@/lib/store'
 
 interface Props {
   guestToken: string
@@ -17,7 +18,18 @@ interface Props {
   items: WishlistItem[]
 }
 
-export function InviteWishlist({ guestToken, eventId, currentGuestId, items }: Props) {
+export function InviteWishlist({ guestToken, eventId, currentGuestId, items: initialItems }: Props) {
+  // ─── Store (Zustand) ────────────────────────────────────────────────────────
+  const storeItems = useWishlistStore(state => state.items)
+  const { setItems } = useWishlistStore()
+  const items = storeItems.length > 0 ? storeItems : initialItems
+
+  useEffect(() => {
+    if (storeItems.length === 0 && initialItems.length > 0) {
+      setItems(initialItems)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ─── Sorting ──────────────────────────────────────────────────────────────
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => {

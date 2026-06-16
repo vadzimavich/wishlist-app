@@ -223,7 +223,7 @@ export function InviteHero({
           variants={item}
           className="text-brand-champagne/80 text-lg md:text-xl mb-10 font-body"
         >
-          {guestCount > 1 ? 'Здравствуйте' : 'Привет'}, {guestName}!
+          Привет, {guestName}!
         </motion.p>
 
         {/* Event title — главный заголовок */}

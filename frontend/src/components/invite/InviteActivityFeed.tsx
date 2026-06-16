@@ -23,7 +23,7 @@ type ActionConfig = {
 const ACTION_CONFIG: Record<string, ActionConfig> = {
   RSVPAttending: { emoji: '🎉', getText: (name) => (name ? `${name} будет!` : 'Кто-то будет!') },
   GiftClaimed: { emoji: '🎁', getText: (name) => (name ? `${name} выбрал(а) подарок` : 'Выбран подарок') },
-  CollectiveJoined: { emoji: '🤝', getText: (name) => (name ? `${name} присоединился к сбору` : 'Присоединились к сбору') },
+  CollectiveJoined: { emoji: '🤝', getText: (name) => (name ? `${name} присоединился(ась) к сбору` : 'Присоединились к сбору') },
   GiftPurchased: { emoji: '✅', getText: () => 'Подарок куплен!' },
 }
 
