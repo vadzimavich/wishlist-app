@@ -3,13 +3,13 @@ import type { WishlistItem } from '@/types'
 // ─── Constants ──────────────────────────────────────────────────────────────────
 
 export const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
-  Available: { label: 'Свободен', cls: 'text-success bg-success/20 border-success/40' },
-  Reserved: { label: 'Выбран', cls: 'text-warning bg-warning/20 border-warning/40' },
-  Collective: { label: 'Открыт сбор', cls: 'text-info bg-info/20 border-info/40' },
-  Purchased: { label: 'Куплен', cls: 'text-admin-muted bg-admin-muted/20 border-admin-muted/40' },
+  Available: { label: 'Свободен', cls: 'text-success border-success/40' },
+  Reserved: { label: 'Выбран', cls: 'text-warning border-warning/40' },
+  Collective: { label: 'Открыт сбор', cls: 'text-info border-info/40' },
+  Purchased: { label: 'Куплен', cls: 'text-admin-muted border-admin-muted/40' },
 }
 
-export const DEFAULT_STATUS = { label: '', cls: 'text-admin-muted bg-admin-muted/10 border-admin-muted/20' }
+export const DEFAULT_STATUS = { label: '', cls: 'text-admin-muted border-admin-muted/20' }
 
 export const STATUS_ORDER: Record<string, number> = {
   Available: 0,

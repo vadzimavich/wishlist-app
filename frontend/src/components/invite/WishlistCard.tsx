@@ -79,7 +79,8 @@ export function WishlistCard({ item, currentGuestId, onOpen, className }: Wishli
         {statusCfg && (
           <span
             className={cn(
-              'absolute top-3 right-3 z-10 text-xs px-2.5 py-1 rounded-full border font-medium',
+              'absolute top-3 right-3 z-10 text-sm px-3 py-1.5 rounded-full border font-medium',
+              'bg-black/50 backdrop-blur-sm',
               statusCfg.cls,
             )}
           >
@@ -94,9 +95,12 @@ export function WishlistCard({ item, currentGuestId, onOpen, className }: Wishli
             target="_blank"
             rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
-            className="absolute top-3 left-3 z-10 text-brand-pearl/60 hover:text-brand-pearl transition-colors"
+            className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
+                         bg-black/50 backdrop-blur-sm text-white/90 hover:text-white hover:bg-black/60 transition-all"
+            title="Открыть на сайте"
           >
-            <ExternalLink size={16} />
+            <ExternalLink size={18} />
+            <span>Сайт</span>
           </a>
         )}
 
